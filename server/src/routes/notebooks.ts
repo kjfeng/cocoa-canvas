@@ -88,19 +88,18 @@ notebooksRouter.post('/help', async (req: Request, res: Response) => {
   }
 });
 
-// Generate input form spec for a user step
+// Generate input form JSX code for a user step
 notebooksRouter.post('/input-form', async (req: Request, res: Response) => {
   try {
     const body = req.body as InputFormRequest;
     const prompt = buildInputFormPrompt(body);
-    const raw = await generateJSON(prompt);
+    const raw = await generateJSON(prompt, { fast: true });
 
-    let jsonStr = raw;
-    const fenceMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
-    if (fenceMatch) jsonStr = fenceMatch[1];
+    // Extract JSX code from markdown fences
+    const fenceMatch = raw.match(/```(?:jsx|tsx)?\s*\n?([\s\S]*?)\n?```/);
+    const code = fenceMatch ? fenceMatch[1].trim() : raw.trim();
 
-    const spec = JSON.parse(jsonStr.trim());
-    res.json(spec);
+    res.json({ code });
   } catch (err: any) {
     console.error('Input form generation error:', err);
     res.status(500).json({ error: err.message });

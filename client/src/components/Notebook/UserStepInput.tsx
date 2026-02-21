@@ -1,11 +1,12 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
-import { streamHelp, generateInputForm } from '../../api/client';
-import type { Card, Step, Attachment, InputFormSpec } from '../../types';
+import { streamHelp, generateInputForm, getCachedInputForm, clearCachedInputForm, storeFormCode, getStoredFormCode } from '../../api/client';
+import type { Card, Step, Attachment } from '../../types';
 import { nanoid } from 'nanoid';
 import MarkdownRenderer from '../Markdown/MarkdownRenderer';
-import InputFormRenderer from './InputFormRenderer';
-import { Paperclip, HelpCircle, Send, X, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
+import DynamicFormRenderer from './DynamicFormRenderer';
+import FormErrorBoundary from './FormErrorBoundary';
+import { Paperclip, HelpCircle, Send, X, Loader2, ToggleLeft, ToggleRight, RefreshCw } from 'lucide-react';
 
 interface Props {
   card: Card;
@@ -19,16 +20,71 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
   const [helpText, setHelpText] = useState('');
   const [isHelpLoading, setIsHelpLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
-  const [formSpec, setFormSpec] = useState<InputFormSpec | null>(null);
+  const [formCode, setFormCode] = useState<string | null>(null);
   const [isFormLoading, setIsFormLoading] = useState(false);
   const [useFreeform, setUseFreeform] = useState(false);
+  const [formFailed, setFormFailed] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setStepResult = useCanvasStore((s) => s.setStepResult);
   const setStepUserAttachments = useCanvasStore((s) => s.setStepUserAttachments);
 
-  // Generate input form on mount
+  // Generate input form on mount — check persistent store, then prefetch cache, then generate
   useEffect(() => {
+    // Check persistent store first (instant, no loading needed)
+    const stored = getStoredFormCode(step.id);
+    if (stored) {
+      setFormCode(stored);
+      setIsFormLoading(false);
+      return;
+    }
+
     let cancelled = false;
+    setIsFormLoading(true);
+
+    const previousSteps = card.steps.slice(0, index).map((s) => ({
+      description: s.description,
+      assignment: s.assignment,
+      result: s.result,
+    }));
+
+    const req = {
+      taskDescription: card.taskDescription,
+      stepDescription: step.description,
+      stepIndex: index,
+      previousSteps,
+    };
+
+    // Check if form was already prefetched (in-flight or resolved)
+    const cached = getCachedInputForm(card.id, index);
+    const promise = cached ?? generateInputForm(req);
+
+    promise
+      .then((res) => {
+        if (!cancelled && res.code) {
+          setFormCode(res.code);
+          setFormFailed(false);
+          storeFormCode(step.id, res.code);
+        } else if (!cancelled) {
+          setFormFailed(true);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setFormFailed(true);
+      })
+      .finally(() => {
+        if (!cancelled) setIsFormLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.taskDescription, step.id, step.description, index, card.steps]);
+
+  const regenerateForm = useCallback(() => {
+    clearCachedInputForm(card.id, index);
+    setFormCode(null);
+    setFormFailed(false);
+    setUseFreeform(false);
     setIsFormLoading(true);
 
     const previousSteps = card.steps.slice(0, index).map((s) => ({
@@ -43,22 +99,22 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
       stepIndex: index,
       previousSteps,
     })
-      .then((spec) => {
-        if (!cancelled && spec.fields && spec.fields.length > 0) {
-          setFormSpec(spec);
+      .then((res) => {
+        if (res.code) {
+          setFormCode(res.code);
+          setFormFailed(false);
+          storeFormCode(step.id, res.code);
+        } else {
+          setFormFailed(true);
         }
       })
       .catch(() => {
-        // Silent fallback to freeform
+        setFormFailed(true);
       })
       .finally(() => {
-        if (!cancelled) setIsFormLoading(false);
+        setIsFormLoading(false);
       });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [card.taskDescription, step.description, index, card.steps]);
+  }, [card.id, card.taskDescription, card.steps, step.id, step.description, index]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -84,11 +140,16 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
     onSubmit();
   };
 
-  const handleFormSubmit = (markdown: string) => {
+  const handleFormSubmit = useCallback((markdown: string) => {
     setStepResult(card.id, step.id, markdown);
     setStepUserAttachments(card.id, step.id, attachments);
     onSubmit();
-  };
+  }, [card.id, step.id, attachments, setStepResult, setStepUserAttachments, onSubmit]);
+
+  const handleFormError = useCallback(() => {
+    setUseFreeform(true);
+    setFormFailed(true);
+  }, []);
 
   const handleHelp = async () => {
     setIsHelpLoading(true);
@@ -111,7 +172,7 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
     }
   };
 
-  const showForm = formSpec && !useFreeform;
+  const showForm = formCode && !useFreeform;
 
   return (
     <div className="border-t border-stone-100 p-4 bg-sky-50/30">
@@ -137,15 +198,21 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
         </div>
       )}
 
-      {isFormLoading && !formSpec && (
+      {isFormLoading && !formCode && (
         <div className="mb-2 flex items-center gap-1.5 text-xs text-stone-400">
           <Loader2 size={12} className="animate-spin" />
-          Generating smart form...
+          Generating smart form... feel free to jot down freeform notes in the meantime!
         </div>
       )}
 
       {showForm ? (
-        <InputFormRenderer spec={formSpec} onSubmit={handleFormSubmit} />
+        <FormErrorBoundary onError={handleFormError}>
+          <DynamicFormRenderer
+            code={formCode}
+            onSubmit={handleFormSubmit}
+            onError={handleFormError}
+          />
+        </FormErrorBoundary>
       ) : (
         <>
           <textarea
@@ -212,13 +279,22 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
             {isHelpLoading ? <Loader2 size={12} className="animate-spin" /> : <HelpCircle size={12} />}
             {isHelpLoading ? 'Loading...' : 'Help me'}
           </button>
-          {formSpec && (
+          {formCode && !formFailed && (
             <button
               onClick={() => setUseFreeform((prev) => !prev)}
               className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 transition-colors"
             >
               {useFreeform ? <ToggleLeft size={12} /> : <ToggleRight size={12} />}
               {useFreeform ? 'Switch to guided form' : 'Switch to freeform'}
+            </button>
+          )}
+          {(formFailed || (useFreeform && formCode)) && !isFormLoading && (
+            <button
+              onClick={regenerateForm}
+              className="inline-flex items-center gap-1 text-xs text-sky-500 hover:text-sky-700 transition-colors"
+            >
+              <RefreshCw size={12} />
+              Regenerate form
             </button>
           )}
         </div>

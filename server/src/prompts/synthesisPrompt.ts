@@ -15,5 +15,5 @@ ${req.taskDescription}
 ${stepResults}
 </step_results>
 
-Synthesize all step results into a polished, cohesive final deliverable. This should read as a complete, standalone document — not just a summary of steps. Use rich markdown formatting including headers, code blocks, tables, and lists as appropriate.`;
+Synthesize all step results into a polished, succinct final deliverable. This should read as a complete, standalone document — not just a summary of steps. Use rich markdown formatting including headers, code blocks, tables, and lists as appropriate.`;
 }

@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card, Step } from '../../types';
 import MarkdownRenderer from '../Markdown/MarkdownRenderer';
 import WidgetRenderer from '../Widgets/WidgetRenderer';
+import DynamicFormRenderer from './DynamicFormRenderer';
+import FormErrorBoundary from './FormErrorBoundary';
 import { X, Loader2, Pencil, RefreshCw, Sparkles, Bot, User } from 'lucide-react';
 import { useNotebook } from '../../hooks/useNotebook';
+import { getStoredFormCode } from '../../api/client';
 
 interface Props {
   card: Card;
@@ -85,6 +88,7 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
   if (!selectedStep) return null;
 
   const hasResult = selectedStep.result !== null;
+  const isUserStep = selectedStep.assignment === 'user';
 
   return (
     <div className="h-full flex flex-col">
@@ -104,9 +108,20 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
             <span className="px-1.5 py-0.5 text-[10px] bg-amber-100 text-amber-600 rounded font-medium">Stale</span>
           )}
         </div>
-        <button onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors">
-          <X size={14} />
-        </button>
+        <div className="flex items-center gap-1">
+          {isUserStep && hasResult && !isEditing && (
+            <button
+              onClick={() => { setEditValue(selectedStep.result || ''); setIsEditing(true); }}
+              className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
+              title="Edit response"
+            >
+              <Pencil size={13} />
+            </button>
+          )}
+          <button onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors">
+            <X size={14} />
+          </button>
+        </div>
       </div>
 
       {/* Step description */}
@@ -122,17 +137,112 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
             Generating...
           </div>
         )}
-        {hasResult && (
+        {isUserStep && hasResult && isEditing ? (
+          <UserStepEditor
+            card={card}
+            step={selectedStep}
+            onDone={() => setIsEditing(false)}
+          />
+        ) : hasResult ? (
           <WidgetRenderer
             cardId={card.id}
             stepId={selectedStep.id}
             result={selectedStep.result!}
             isStreaming={selectedStep.isRunning}
           />
-        )}
+        ) : null}
         {!hasResult && !selectedStep.isRunning && (
           <p className="text-sm text-stone-400 text-center py-8">No result yet. Run this step to see output here.</p>
         )}
+      </div>
+    </div>
+  );
+}
+
+function UserStepEditor({ card, step, onDone }: { card: Card; step: Step; onDone: () => void }) {
+  const setStepResult = useCanvasStore((s) => s.setStepResult);
+  const [editValue, setEditValue] = useState(step.result || '');
+  const cachedCode = getStoredFormCode(step.id);
+  const [useFormView, setUseFormView] = useState(!!cachedCode);
+  const [formErrored, setFormErrored] = useState(false);
+
+  const handleFormSubmit = useCallback((markdown: string) => {
+    setStepResult(card.id, step.id, markdown);
+    onDone();
+  }, [card.id, step.id, setStepResult, onDone]);
+
+  const handleFormError = useCallback(() => {
+    setFormErrored(true);
+    setUseFormView(false);
+  }, []);
+
+  const handleSaveMarkdown = () => {
+    if (editValue.trim()) {
+      setStepResult(card.id, step.id, editValue);
+    }
+    onDone();
+  };
+
+  if (useFormView && cachedCode && !formErrored) {
+    return (
+      <div>
+        <FormErrorBoundary onError={handleFormError}>
+          <DynamicFormRenderer
+            code={cachedCode}
+            onSubmit={handleFormSubmit}
+            onError={handleFormError}
+          />
+        </FormErrorBoundary>
+        <div className="mt-3 flex items-center justify-between">
+          <button
+            onClick={() => setUseFormView(false)}
+            className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            Edit as text instead
+          </button>
+          <button
+            onClick={onDone}
+            className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div>
+      <textarea
+        value={editValue}
+        onChange={(e) => setEditValue(e.target.value)}
+        className="w-full h-48 px-3.5 py-2.5 border border-stone-200 rounded-xl text-sm text-stone-800 resize-y focus:outline-none focus:ring-2 focus:ring-sky-200/50 focus:border-sky-300"
+      />
+      <div className="mt-2 flex items-center justify-between">
+        <div>
+          {cachedCode && !formErrored && (
+            <button
+              onClick={() => setUseFormView(true)}
+              className="text-xs text-stone-400 hover:text-stone-600 transition-colors"
+            >
+              Edit with form instead
+            </button>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={onDone}
+            className="px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleSaveMarkdown}
+            className="px-3 py-1.5 text-xs bg-sky-500 text-white rounded-lg hover:bg-sky-600 transition-colors"
+          >
+            Save
+          </button>
+        </div>
       </div>
     </div>
   );

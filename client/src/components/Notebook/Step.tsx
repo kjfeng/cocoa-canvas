@@ -24,11 +24,14 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
   const updateDescription = useCanvasStore((s) => s.updateStepDescription);
   const markDownstreamStale = useCanvasStore((s) => s.markDownstreamStale);
   const removeStep = useCanvasStore((s) => s.removeStep);
+  const setStepResult = useCanvasStore((s) => s.setStepResult);
 
   const handleDescriptionChange = (newDesc: string) => {
-    updateDescription(card.id, step.id, newDesc);
-    if (step.result !== null) {
-      markDownstreamStale(card.id, index);
+    if (newDesc !== step.description) {
+      updateDescription(card.id, step.id, newDesc);
+      if (step.result !== null) {
+        markDownstreamStale(card.id, index);
+      }
     }
     setIsEditing(false);
   };
@@ -38,6 +41,10 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
     if (step.assignment === 'agent') {
       onRunAgent();
     } else {
+      // Clear existing result so the form re-opens (form code is cached for instant load)
+      if (step.result !== null) {
+        setStepResult(card.id, step.id, null);
+      }
       setIsUserStepActive(true);
     }
   };

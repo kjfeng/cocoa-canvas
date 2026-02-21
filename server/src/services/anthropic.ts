@@ -1,6 +1,7 @@
 import Anthropic from '@anthropic-ai/sdk';
 
 const MODEL = 'claude-sonnet-4-6';
+const FAST_MODEL = 'claude-haiku-4-5-20241022';
 
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
@@ -10,10 +11,10 @@ function getClient(): Anthropic {
   return _client;
 }
 
-export async function generateJSON(prompt: string): Promise<string> {
+export async function generateJSON(prompt: string, opts?: { fast?: boolean }): Promise<string> {
   const response = await getClient().messages.create({
-    model: MODEL,
-    max_tokens: 2048,
+    model: opts?.fast ? FAST_MODEL : MODEL,
+    max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
   });
   const block = response.content[0];

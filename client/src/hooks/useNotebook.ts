@@ -1,6 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { useCanvasStore } from '../store/canvasStore';
-import { streamStep, streamHelp, streamSynthesis } from '../api/client';
+import { streamStep, streamHelp, streamSynthesis, prefetchInputForm } from '../api/client';
 import type { Card } from '../types';
 
 export function useNotebook(card: Card) {
@@ -105,6 +105,20 @@ export function useNotebook(card: Card) {
       const step = currentCard.steps[i];
 
       if (step.assignment === 'agent') {
+        // Look ahead: if the next step is a user step, prefetch its form while the agent runs
+        const nextStep = currentCard.steps[i + 1];
+        if (nextStep && nextStep.assignment === 'user' && !nextStep.result) {
+          prefetchInputForm(card.id, {
+            taskDescription: currentCard.taskDescription,
+            stepDescription: nextStep.description,
+            stepIndex: i + 1,
+            previousSteps: currentCard.steps.slice(0, i + 1).map((s) => ({
+              description: s.description,
+              assignment: s.assignment,
+              result: s.result,
+            })),
+          });
+        }
         await runAgentStep(i);
       } else {
         // User step — pause and wait. The user will submit, then we continue.

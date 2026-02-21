@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import { useNotebook } from '../../hooks/useNotebook';
+import { prefetchInputForm } from '../../api/client';
 import type { Card } from '../../types';
 import Step from './Step';
 import { Play, Square, Plus, Loader2, Pause, Sparkles, Check } from 'lucide-react';
@@ -18,14 +19,32 @@ export default function Notebook({ card, selectedStepId, onSelectStep }: Props) 
   const isRunningAll = runAllAbortCardId === card.id;
   const [pausedAtIndex, setPausedAtIndex] = useState<number | null>(null);
 
+  const prefetchFormForStep = useCallback((stepIndex: number) => {
+    const currentCard = useCanvasStore.getState().cards[card.id];
+    if (!currentCard) return;
+    const step = currentCard.steps[stepIndex];
+    if (!step || step.assignment !== 'user') return;
+    prefetchInputForm(card.id, {
+      taskDescription: currentCard.taskDescription,
+      stepDescription: step.description,
+      stepIndex,
+      previousSteps: currentCard.steps.slice(0, stepIndex).map((s) => ({
+        description: s.description,
+        assignment: s.assignment,
+        result: s.result,
+      })),
+    });
+  }, [card.id]);
+
   const handleRunAll = useCallback(async () => {
     const result = await runAll();
     if (result !== undefined && result >= 0) {
       setPausedAtIndex(result);
+      prefetchFormForStep(result);
     } else {
       setPausedAtIndex(null);
     }
-  }, [runAll]);
+  }, [runAll, prefetchFormForStep]);
 
   const handleResumeAfterUser = useCallback(
     async (fromIndex: number) => {
@@ -46,6 +65,7 @@ export default function Notebook({ card, selectedStepId, onSelectStep }: Props) 
         } else {
           store.setRunAllAbortCardId(null);
           setPausedAtIndex(i);
+          prefetchFormForStep(i);
           return;
         }
       }
@@ -61,10 +81,21 @@ export default function Notebook({ card, selectedStepId, onSelectStep }: Props) 
 
   if (card.isGeneratingPlan) {
     return (
-      <div className="p-8 flex items-center justify-center h-full">
-        <div className="flex items-center gap-3 text-stone-400">
-          <Loader2 size={18} className="animate-spin" />
-          <span className="text-sm">Generating plan...</span>
+      <div className="p-5">
+        <div className="flex items-center gap-2.5 mb-5">
+          <Loader2 size={16} className="animate-spin text-stone-400" />
+          <span className="text-sm text-stone-500">Generating plan...</span>
+        </div>
+        <div className="space-y-2.5">
+          {[0.92, 0.75, 0.85, 0.6].map((w, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-stone-100 animate-pulse flex-shrink-0" />
+              <div className="flex-1 space-y-1.5">
+                <div className="h-3.5 bg-stone-100 rounded animate-pulse" style={{ width: `${w * 100}%` }} />
+                {i === 0 && <div className="h-2.5 bg-stone-50 rounded animate-pulse w-1/3" />}
+              </div>
+            </div>
+          ))}
         </div>
       </div>
     );

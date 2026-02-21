@@ -1,6 +1,6 @@
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
-import { Expand, Copy, Trash2, Check, Loader2, Link } from 'lucide-react';
+import { Expand, Copy, Trash2, Check, Loader2, Link, Sparkles } from 'lucide-react';
 
 interface Props {
   card: Card;
@@ -90,6 +90,26 @@ export default function CardSummary({ card }: Props) {
               )}
             </div>
           </>
+        )}
+
+        {card.finalResult && (
+          <div className="mt-3 p-2.5 bg-amber-50/60 border border-amber-100 rounded-lg">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Sparkles size={11} className="text-amber-500 flex-shrink-0" />
+              <span className="text-[11px] font-medium text-amber-600">Final Result</span>
+            </div>
+            <p className="text-xs text-stone-600 line-clamp-2 leading-relaxed">
+              {card.finalResult
+                .replace(/^#{1,6}\s+/gm, '')
+                .replace(/\*\*|__/g, '')
+                .replace(/\*|_/g, '')
+                .replace(/`{1,3}[^`]*`{1,3}/g, '')
+                .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+                .replace(/\n+/g, ' ')
+                .trim()
+                .slice(0, 200)}
+            </p>
+          </div>
         )}
       </div>
 
