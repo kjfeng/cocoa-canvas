@@ -5,7 +5,7 @@ import MarkdownRenderer from '../Markdown/MarkdownRenderer';
 import WidgetRenderer from '../Widgets/WidgetRenderer';
 import DynamicFormRenderer from './DynamicFormRenderer';
 import FormErrorBoundary from './FormErrorBoundary';
-import { X, Loader2, Pencil, RefreshCw, Sparkles, Bot, User } from 'lucide-react';
+import { X, Loader2, Pencil, RefreshCw, Sparkles, Bot, User, ChevronDown, ChevronRight } from 'lucide-react';
 import { useNotebook } from '../../hooks/useNotebook';
 import { getStoredFormCode } from '../../api/client';
 
@@ -159,12 +159,36 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
   );
 }
 
+function PreviousResponsePanel({ result }: { result: string }) {
+  const [expanded, setExpanded] = useState(true);
+
+  return (
+    <div className="mb-3 border border-stone-200 rounded-lg overflow-hidden">
+      <button
+        onClick={() => setExpanded((p) => !p)}
+        className="w-full flex items-center gap-1.5 px-3 py-2 text-xs font-medium text-stone-500 bg-stone-50 hover:bg-stone-100 transition-colors"
+      >
+        {expanded ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+        Previous response
+      </button>
+      {expanded && (
+        <div className="px-3 py-2 text-xs text-stone-600 max-h-40 overflow-y-auto border-t border-stone-100">
+          <div className="prose prose-xs prose-stone max-w-none">
+            <MarkdownRenderer content={result} />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function UserStepEditor({ card, step, onDone }: { card: Card; step: Step; onDone: () => void }) {
   const setStepResult = useCanvasStore((s) => s.setStepResult);
   const [editValue, setEditValue] = useState(step.result || '');
   const cachedCode = getStoredFormCode(step.id);
   const [useFormView, setUseFormView] = useState(!!cachedCode);
   const [formErrored, setFormErrored] = useState(false);
+  const previousResult = step.result || '';
 
   const handleFormSubmit = useCallback((markdown: string) => {
     setStepResult(card.id, step.id, markdown);
@@ -186,6 +210,7 @@ function UserStepEditor({ card, step, onDone }: { card: Card; step: Step; onDone
   if (useFormView && cachedCode && !formErrored) {
     return (
       <div>
+        <PreviousResponsePanel result={previousResult} />
         <FormErrorBoundary onError={handleFormError}>
           <DynamicFormRenderer
             code={cachedCode}
