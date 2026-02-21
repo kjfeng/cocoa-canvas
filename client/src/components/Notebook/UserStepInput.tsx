@@ -1,10 +1,11 @@
-import { useState, useRef, useCallback } from 'react';
+import { useState, useRef, useCallback, useEffect } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
-import { streamHelp } from '../../api/client';
-import type { Card, Step, Attachment } from '../../types';
+import { streamHelp, generateInputForm } from '../../api/client';
+import type { Card, Step, Attachment, InputFormSpec } from '../../types';
 import { nanoid } from 'nanoid';
 import MarkdownRenderer from '../Markdown/MarkdownRenderer';
-import { Paperclip, HelpCircle, Send, X, Loader2 } from 'lucide-react';
+import InputFormRenderer from './InputFormRenderer';
+import { Paperclip, HelpCircle, Send, X, Loader2, ToggleLeft, ToggleRight } from 'lucide-react';
 
 interface Props {
   card: Card;
@@ -18,9 +19,46 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
   const [helpText, setHelpText] = useState('');
   const [isHelpLoading, setIsHelpLoading] = useState(false);
   const [attachments, setAttachments] = useState<Attachment[]>([]);
+  const [formSpec, setFormSpec] = useState<InputFormSpec | null>(null);
+  const [isFormLoading, setIsFormLoading] = useState(false);
+  const [useFreeform, setUseFreeform] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const setStepResult = useCanvasStore((s) => s.setStepResult);
   const setStepUserAttachments = useCanvasStore((s) => s.setStepUserAttachments);
+
+  // Generate input form on mount
+  useEffect(() => {
+    let cancelled = false;
+    setIsFormLoading(true);
+
+    const previousSteps = card.steps.slice(0, index).map((s) => ({
+      description: s.description,
+      assignment: s.assignment,
+      result: s.result,
+    }));
+
+    generateInputForm({
+      taskDescription: card.taskDescription,
+      stepDescription: step.description,
+      stepIndex: index,
+      previousSteps,
+    })
+      .then((spec) => {
+        if (!cancelled && spec.fields && spec.fields.length > 0) {
+          setFormSpec(spec);
+        }
+      })
+      .catch(() => {
+        // Silent fallback to freeform
+      })
+      .finally(() => {
+        if (!cancelled) setIsFormLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [card.taskDescription, step.description, index, card.steps]);
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
@@ -39,9 +77,15 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
     e.target.value = '';
   }, []);
 
-  const handleSubmit = () => {
+  const handleFreeformSubmit = () => {
     if (!userText.trim()) return;
     setStepResult(card.id, step.id, userText);
+    setStepUserAttachments(card.id, step.id, attachments);
+    onSubmit();
+  };
+
+  const handleFormSubmit = (markdown: string) => {
+    setStepResult(card.id, step.id, markdown);
     setStepUserAttachments(card.id, step.id, attachments);
     onSubmit();
   };
@@ -67,6 +111,8 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
     }
   };
 
+  const showForm = formSpec && !useFreeform;
+
   return (
     <div className="border-t border-stone-100 p-4 bg-sky-50/30">
       <p className="text-xs text-sky-600 mb-2.5 font-medium">
@@ -91,12 +137,36 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
         </div>
       )}
 
-      <textarea
-        value={userText}
-        onChange={(e) => setUserText(e.target.value)}
-        placeholder="Type your response..."
-        className="w-full h-24 px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 resize-none focus:outline-none focus:ring-2 focus:ring-sky-200/50 focus:border-sky-300 placeholder:text-stone-400 transition-shadow"
-      />
+      {isFormLoading && !formSpec && (
+        <div className="mb-2 flex items-center gap-1.5 text-xs text-stone-400">
+          <Loader2 size={12} className="animate-spin" />
+          Generating smart form...
+        </div>
+      )}
+
+      {showForm ? (
+        <InputFormRenderer spec={formSpec} onSubmit={handleFormSubmit} />
+      ) : (
+        <>
+          <textarea
+            value={userText}
+            onChange={(e) => setUserText(e.target.value)}
+            placeholder="Type your response..."
+            className="w-full h-24 px-3.5 py-2.5 bg-white border border-stone-200 rounded-xl text-sm text-stone-800 resize-none focus:outline-none focus:ring-2 focus:ring-sky-200/50 focus:border-sky-300 placeholder:text-stone-400 transition-shadow"
+          />
+
+          <div className="flex justify-end mt-2">
+            <button
+              onClick={handleFreeformSubmit}
+              disabled={!userText.trim()}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
+            >
+              <Send size={12} />
+              Submit
+            </button>
+          </div>
+        </>
+      )}
 
       {attachments.length > 0 && (
         <div className="mt-2 flex flex-wrap gap-1.5">
@@ -142,15 +212,16 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
             {isHelpLoading ? <Loader2 size={12} className="animate-spin" /> : <HelpCircle size={12} />}
             {isHelpLoading ? 'Loading...' : 'Help me'}
           </button>
+          {formSpec && (
+            <button
+              onClick={() => setUseFreeform((prev) => !prev)}
+              className="inline-flex items-center gap-1 text-xs text-stone-400 hover:text-stone-600 transition-colors"
+            >
+              {useFreeform ? <ToggleLeft size={12} /> : <ToggleRight size={12} />}
+              {useFreeform ? 'Switch to guided form' : 'Switch to freeform'}
+            </button>
+          )}
         </div>
-        <button
-          onClick={handleSubmit}
-          disabled={!userText.trim()}
-          className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-sky-500 hover:bg-sky-600 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
-        >
-          <Send size={12} />
-          Submit
-        </button>
       </div>
     </div>
   );

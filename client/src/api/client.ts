@@ -1,4 +1,4 @@
-import type { PlanRequest, PlanResponse, StepRequest, HelpRequest, SynthesisRequest } from '../types';
+import type { PlanRequest, PlanResponse, StepRequest, HelpRequest, SynthesisRequest, InputFormRequest, InputFormSpec } from '../types';
 
 const BASE = '/api/notebooks';
 
@@ -66,4 +66,14 @@ export function streamHelp(req: HelpRequest, onChunk: (text: string) => void, si
 
 export function streamSynthesis(req: SynthesisRequest, onChunk: (text: string) => void, signal?: AbortSignal) {
   return streamSSE(`${BASE}/synthesize`, req, onChunk, signal);
+}
+
+export async function generateInputForm(req: InputFormRequest): Promise<InputFormSpec> {
+  const res = await fetch(`${BASE}/input-form`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new Error(`Input form generation failed: ${res.statusText}`);
+  return res.json();
 }

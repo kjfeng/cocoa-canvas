@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card, Step as StepType } from '../../types';
 import { tryParseStructuredResult, getStructuredSummary } from '../../utils/parseStructuredResult';
@@ -19,6 +19,7 @@ interface Props {
 
 export default function Step({ card, step, index, isSelected, onSelect, onRunAgent, isPausedHere, onUserSubmit }: Props) {
   const [isEditing, setIsEditing] = useState(false);
+  const [isUserStepActive, setIsUserStepActive] = useState(false);
   const toggleAssignment = useCanvasStore((s) => s.toggleStepAssignment);
   const updateDescription = useCanvasStore((s) => s.updateStepDescription);
   const markDownstreamStale = useCanvasStore((s) => s.markDownstreamStale);
@@ -36,10 +37,17 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
     e.stopPropagation();
     if (step.assignment === 'agent') {
       onRunAgent();
+    } else {
+      setIsUserStepActive(true);
     }
   };
 
-  const showUserInput = step.assignment === 'user' && (isPausedHere || (!step.result && !step.isRunning));
+  // Auto-activate when Run All pauses here
+  useEffect(() => {
+    if (isPausedHere) setIsUserStepActive(true);
+  }, [isPausedHere]);
+
+  const showUserInput = step.assignment === 'user' && isUserStepActive && !step.result;
 
   // Generate a brief plain-text preview from the result
   const preview = (() => {
@@ -78,7 +86,7 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
           {/* Run button */}
           <button
             onClick={handleRun}
-            disabled={step.isRunning || (step.assignment === 'user' && !isPausedHere && step.result === null)}
+            disabled={step.isRunning}
             className={`group/btn w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
               step.isRunning
                 ? 'bg-blue-100 text-blue-500'

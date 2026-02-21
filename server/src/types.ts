@@ -29,3 +29,10 @@ export interface SynthesisRequest {
   taskDescription: string;
   steps: { description: string; assignment: StepAssignment; result: string | null }[];
 }
+
+export interface InputFormRequest {
+  taskDescription: string;
+  stepDescription: string;
+  stepIndex: number;
+  previousSteps: { description: string; assignment: StepAssignment; result: string | null }[];
+}

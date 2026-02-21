@@ -5,7 +5,8 @@ import { buildPlanPrompt } from '../prompts/planPrompt.js';
 import { buildStepPrompt } from '../prompts/stepPrompt.js';
 import { buildHelpPrompt } from '../prompts/helpPrompt.js';
 import { buildSynthesisPrompt } from '../prompts/synthesisPrompt.js';
-import type { PlanRequest, StepRequest, HelpRequest, SynthesisRequest } from '../types.js';
+import type { PlanRequest, StepRequest, HelpRequest, SynthesisRequest, InputFormRequest } from '../types.js';
+import { buildInputFormPrompt } from '../prompts/inputFormPrompt.js';
 
 export const notebooksRouter = Router();
 
@@ -84,6 +85,25 @@ notebooksRouter.post('/help', async (req: Request, res: Response) => {
       res.write(`data: ${JSON.stringify({ error: err.message })}\n\n`);
       res.end();
     }
+  }
+});
+
+// Generate input form spec for a user step
+notebooksRouter.post('/input-form', async (req: Request, res: Response) => {
+  try {
+    const body = req.body as InputFormRequest;
+    const prompt = buildInputFormPrompt(body);
+    const raw = await generateJSON(prompt);
+
+    let jsonStr = raw;
+    const fenceMatch = raw.match(/```(?:json)?\s*\n?([\s\S]*?)\n?```/);
+    if (fenceMatch) jsonStr = fenceMatch[1];
+
+    const spec = JSON.parse(jsonStr.trim());
+    res.json(spec);
+  } catch (err: any) {
+    console.error('Input form generation error:', err);
+    res.status(500).json({ error: err.message });
   }
 });
 

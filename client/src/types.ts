@@ -105,3 +105,63 @@ export interface SynthesisRequest {
   taskDescription: string;
   steps: { description: string; assignment: StepAssignment; result: string | null }[];
 }
+
+// --- Input form types ---
+
+export interface InputFieldText {
+  type: 'text';
+  id: string;
+  label: string;
+  placeholder?: string;
+  multiline?: boolean;
+}
+
+export interface InputFieldSelect {
+  type: 'select';
+  id: string;
+  label: string;
+  options: string[];
+  multiple?: boolean;
+}
+
+export interface InputFieldChecklist {
+  type: 'checklist';
+  id: string;
+  label: string;
+  options: string[];
+}
+
+export interface InputFieldRanking {
+  type: 'ranking';
+  id: string;
+  label: string;
+  items: string[];
+}
+
+export interface InputFieldScale {
+  type: 'scale';
+  id: string;
+  label: string;
+  min: number;
+  max: number;
+  minLabel?: string;
+  maxLabel?: string;
+}
+
+export type InputField =
+  | InputFieldText
+  | InputFieldSelect
+  | InputFieldChecklist
+  | InputFieldRanking
+  | InputFieldScale;
+
+export interface InputFormSpec {
+  fields: InputField[];
+}
+
+export interface InputFormRequest {
+  taskDescription: string;
+  stepDescription: string;
+  stepIndex: number;
+  previousSteps: { description: string; assignment: StepAssignment; result: string | null }[];
+}
