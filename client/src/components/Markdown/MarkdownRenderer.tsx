@@ -1,8 +1,8 @@
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeHighlight from 'rehype-highlight';
-import { useCallback, useState, type ReactNode } from 'react';
-import { Clipboard, Check, ChevronRight } from 'lucide-react';
+import { useCallback, useState, useRef, useEffect, type ReactNode } from 'react';
+import { Clipboard, Check, ChevronRight, ChevronsUpDown } from 'lucide-react';
 
 interface Props {
   content: string;
@@ -59,13 +59,24 @@ function splitIntoSections(md: string): Section[] {
   return sections;
 }
 
-function CollapsibleSection({ level, heading, children }: { level: number; heading: string; children: ReactNode }) {
-  const [open, setOpen] = useState(false);
+function CollapsibleSection({ level, heading, open, onToggle, children }: { level: number; heading: string; open: boolean; onToggle: () => void; children: ReactNode }) {
+  const detailsRef = useRef<HTMLDetailsElement>(null);
   const textSize = level === 2 ? 'text-base font-semibold' : 'text-sm font-semibold';
+
+  // Sync the DOM open attribute with the controlled prop
+  useEffect(() => {
+    if (detailsRef.current) {
+      detailsRef.current.open = open;
+    }
+  }, [open]);
 
   return (
     <details
-      onToggle={(e) => setOpen((e.target as HTMLDetailsElement).open)}
+      ref={detailsRef}
+      onToggle={(e) => {
+        const isOpen = (e.target as HTMLDetailsElement).open;
+        if (isOpen !== open) onToggle();
+      }}
       className="mb-3"
     >
       <summary
@@ -152,14 +163,43 @@ function MarkdownBlock({ content }: { content: string }) {
 
 export default function MarkdownRenderer({ content, collapsible = true }: Props) {
   const sections = collapsible ? splitIntoSections(content) : null;
+  const headingCount = sections ? sections.filter((s) => s.level > 0).length : 0;
+  const hasCollapsible = sections && headingCount > 0;
 
-  // If no collapsible sections found (no h2/h3 headings), or collapsible disabled, render flat
-  if (!sections || sections.length <= 1) {
+  // Track open/closed state per section index
+  const [openMap, setOpenMap] = useState<Record<number, boolean>>({});
+
+  const toggleSection = useCallback((idx: number) => {
+    setOpenMap((prev) => ({ ...prev, [idx]: !prev[idx] }));
+  }, []);
+
+  const allOpen = hasCollapsible && sections!.every((s, i) => s.level === 0 || openMap[i]);
+
+  const toggleAll = useCallback(() => {
+    if (!sections) return;
+    const newOpen = !allOpen;
+    const next: Record<number, boolean> = {};
+    sections.forEach((s, i) => {
+      if (s.level > 0) next[i] = newOpen;
+    });
+    setOpenMap(next);
+  }, [sections, allOpen]);
+
+  if (!hasCollapsible || !sections || sections.length <= 1) {
     return <MarkdownBlock content={content} />;
   }
 
   return (
     <div className="space-y-1">
+      <div className="flex justify-end mb-1">
+        <button
+          onClick={toggleAll}
+          className="inline-flex items-center gap-1 text-[11px] text-stone-400 hover:text-stone-600 transition-colors"
+        >
+          <ChevronsUpDown size={12} />
+          {allOpen ? 'Collapse all' : 'Expand all'}
+        </button>
+      </div>
       {sections.map((section, i) => {
         if (section.level === 0) {
           return section.body ? (
@@ -170,7 +210,13 @@ export default function MarkdownRenderer({ content, collapsible = true }: Props)
         }
 
         return (
-          <CollapsibleSection key={i} level={section.level} heading={section.heading}>
+          <CollapsibleSection
+            key={i}
+            level={section.level}
+            heading={section.heading}
+            open={!!openMap[i]}
+            onToggle={() => toggleSection(i)}
+          >
             {section.body && <MarkdownBlock content={section.body} />}
           </CollapsibleSection>
         );
