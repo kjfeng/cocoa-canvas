@@ -1,5 +1,6 @@
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
+import { Expand, Copy, Trash2, Check, Loader2, Link } from 'lucide-react';
 
 interface Props {
   card: Card;
@@ -15,10 +16,10 @@ export default function CardSummary({ card }: Props) {
   const totalSteps = card.steps.length;
 
   return (
-    <div className="w-72 bg-white rounded-xl shadow-md border border-stone-200 overflow-hidden hover:shadow-lg transition-shadow">
+    <div className="w-72 bg-white rounded-xl shadow-sm border border-stone-200/80 overflow-hidden hover:shadow-md transition-all group">
       <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-semibold text-stone-800 text-sm leading-tight truncate flex-1">
+        <div className="flex items-start justify-between gap-2 mb-1.5">
+          <h3 className="font-medium text-stone-800 text-sm leading-snug line-clamp-2 flex-1">
             {card.title}
           </h3>
           <button
@@ -26,71 +27,78 @@ export default function CardSummary({ card }: Props) {
               e.stopPropagation();
               removeCard(card.id);
             }}
-            className="text-stone-400 hover:text-red-500 text-xs flex-shrink-0"
+            className="text-stone-300 hover:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
             title="Delete card"
           >
-            ✕
+            <Trash2 size={13} />
           </button>
         </div>
 
+        {card.copiedFromId && cards[card.copiedFromId] && (
+          <div className="flex items-center gap-1 text-[11px] text-stone-400 mb-2">
+            <Link size={10} />
+            <span className="truncate">{cards[card.copiedFromId].title}</span>
+          </div>
+        )}
+
         {card.isGeneratingPlan && (
           <div className="text-xs text-stone-500 flex items-center gap-1.5 mb-2">
-            <span className="inline-block w-3 h-3 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
+            <Loader2 size={12} className="animate-spin" />
             Generating plan...
           </div>
         )}
 
         {totalSteps > 0 && (
           <>
-            <div className="mb-2">
-              <div className="flex justify-between text-xs text-stone-500 mb-1">
-                <span>{completedSteps} / {totalSteps} steps</span>
-                {card.finalResult && <span className="text-green-600 font-medium">Complete</span>}
+            <div className="mb-2.5">
+              <div className="flex justify-between text-[11px] text-stone-400 mb-1">
+                <span>{completedSteps} of {totalSteps} steps</span>
+                {card.finalResult && (
+                  <span className="text-emerald-500 font-medium flex items-center gap-0.5">
+                    <Check size={11} />
+                    Done
+                  </span>
+                )}
               </div>
-              <div className="w-full h-1.5 bg-stone-100 rounded-full overflow-hidden">
+              <div className="w-full h-1 bg-stone-100 rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-cocoa-500 rounded-full transition-all"
+                  className="h-full bg-stone-700 rounded-full transition-all duration-500"
                   style={{ width: `${totalSteps > 0 ? (completedSteps / totalSteps) * 100 : 0}%` }}
                 />
               </div>
             </div>
 
             <div className="space-y-1">
-              {card.steps.slice(0, 4).map((step, i) => (
-                <div key={step.id} className="flex items-center gap-1.5 text-xs text-stone-600">
-                  <span className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] flex-shrink-0 ${
+              {card.steps.slice(0, 3).map((step, i) => (
+                <div key={step.id} className="flex items-center gap-2 text-xs text-stone-500">
+                  <span className={`w-[18px] h-[18px] rounded-md flex items-center justify-center text-[10px] flex-shrink-0 font-medium ${
                     step.result !== null
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-emerald-50 text-emerald-600'
                       : step.isRunning
-                        ? 'bg-blue-100 text-blue-700'
-                        : 'bg-stone-100 text-stone-500'
+                        ? 'bg-blue-50 text-blue-500'
+                        : 'bg-stone-50 text-stone-400'
                   }`}>
-                    {step.result !== null ? '✓' : i + 1}
+                    {step.result !== null ? <Check size={10} /> : i + 1}
                   </span>
                   <span className="truncate">{step.description || 'Untitled step'}</span>
                 </div>
               ))}
-              {card.steps.length > 4 && (
-                <div className="text-xs text-stone-400 pl-5">
-                  +{card.steps.length - 4} more steps
-                </div>
+              {card.steps.length > 3 && (
+                <p className="text-[11px] text-stone-400 pl-[26px]">
+                  +{card.steps.length - 3} more
+                </p>
               )}
             </div>
           </>
         )}
-
-        {card.copiedFromId && cards[card.copiedFromId] && (
-          <div className="mt-2 text-xs text-stone-400">
-            Copied from: <span className="text-cocoa-600">{cards[card.copiedFromId].title}</span>
-          </div>
-        )}
       </div>
 
-      <div className="border-t border-stone-100 flex">
+      <div className="border-t border-stone-100 flex divide-x divide-stone-100">
         <button
           onClick={() => expandCard(card.id)}
-          className="flex-1 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors font-medium"
+          className="flex-1 py-2 text-xs text-stone-500 hover:text-stone-800 hover:bg-stone-50 transition-colors flex items-center justify-center gap-1.5 font-medium"
         >
+          <Expand size={12} />
           Open
         </button>
         <button
@@ -98,8 +106,9 @@ export default function CardSummary({ card }: Props) {
             e.stopPropagation();
             copyCard(card.id);
           }}
-          className="flex-1 py-2 text-xs text-stone-600 hover:bg-stone-50 transition-colors border-l border-stone-100"
+          className="flex-1 py-2 text-xs text-stone-500 hover:text-stone-800 hover:bg-stone-50 transition-colors flex items-center justify-center gap-1.5"
         >
+          <Copy size={12} />
           Copy
         </button>
       </div>

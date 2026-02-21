@@ -13,10 +13,14 @@ export default function Canvas() {
   const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
   const panStart = useRef({ x: 0, y: 0 });
+  // Keep refs in sync for the wheel handler
+  const panRef = useRef(pan);
+  const zoomRef = useRef(zoom);
+  panRef.current = pan;
+  zoomRef.current = zoom;
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
-      // Only pan on middle click or when clicking the canvas background
       if (e.button === 1 || (e.button === 0 && e.target === e.currentTarget)) {
         setIsPanning(true);
         panStart.current = { x: e.clientX - pan.x, y: e.clientY - pan.y };
@@ -38,20 +42,28 @@ export default function Canvas() {
     setIsPanning(false);
   }, []);
 
-  const handleWheel = useCallback((e: React.WheelEvent) => {
-    e.preventDefault();
-    const delta = e.deltaY > 0 ? 0.95 : 1.05;
-    setZoom((z) => Math.min(Math.max(z * delta, 0.1), 3));
-  }, []);
-
-  // Attach non-passive wheel listener
+  // Zoom toward cursor position
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
     const handler = (e: WheelEvent) => {
       e.preventDefault();
-      const delta = e.deltaY > 0 ? 0.95 : 1.05;
-      setZoom((z) => Math.min(Math.max(z * delta, 0.1), 3));
+      const oldZoom = zoomRef.current;
+      const factor = e.deltaY > 0 ? 0.93 : 1.07;
+      const newZoom = Math.min(Math.max(oldZoom * factor, 0.1), 3);
+
+      // Cursor position relative to the container
+      const rect = el.getBoundingClientRect();
+      const cx = e.clientX - rect.left;
+      const cy = e.clientY - rect.top;
+
+      // Adjust pan so the world-point under the cursor stays fixed
+      const oldPan = panRef.current;
+      const newPanX = cx - (cx - oldPan.x) * (newZoom / oldZoom);
+      const newPanY = cy - (cy - oldPan.y) * (newZoom / oldZoom);
+
+      setZoom(newZoom);
+      setPan({ x: newPanX, y: newPanY });
     };
     el.addEventListener('wheel', handler, { passive: false });
     return () => el.removeEventListener('wheel', handler);
@@ -62,10 +74,10 @@ export default function Canvas() {
   return (
     <div
       ref={containerRef}
-      className="w-full h-full relative overflow-hidden bg-stone-100"
+      className="w-full h-full relative overflow-hidden bg-stone-50"
       style={{
         backgroundImage:
-          'radial-gradient(circle, #d6d3d1 1px, transparent 1px)',
+          'radial-gradient(circle, #d4d0cc 1px, transparent 1px)',
         backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
         backgroundPosition: `${pan.x}px ${pan.y}px`,
         cursor: isPanning ? 'grabbing' : 'default',

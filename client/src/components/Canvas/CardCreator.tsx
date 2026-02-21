@@ -3,6 +3,7 @@ import { useCanvasStore } from '../../store/canvasStore';
 import { generatePlan } from '../../api/client';
 import type { Attachment } from '../../types';
 import { nanoid } from 'nanoid';
+import { Plus, Paperclip, X } from 'lucide-react';
 
 interface Props {
   pan: { x: number; y: number };
@@ -42,7 +43,6 @@ export default function CardCreator({ pan, zoom }: Props) {
     if (!taskDescription.trim()) return;
     setIsCreating(true);
 
-    // Place card near center of viewport
     const x = (window.innerWidth / 2 - pan.x) / zoom - 144;
     const y = (window.innerHeight / 2 - pan.y) / zoom - 100;
     const cardId = addCard(taskDescription, attachments, { x, y });
@@ -63,52 +63,61 @@ export default function CardCreator({ pan, zoom }: Props) {
     }
   };
 
+  const handleClose = () => {
+    setIsOpen(false);
+    setTaskDescription('');
+    setAttachments([]);
+  };
+
   return (
     <>
       <button
         onClick={() => setIsOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-14 h-14 bg-cocoa-600 hover:bg-cocoa-700 text-white rounded-full shadow-lg flex items-center justify-center text-2xl transition-colors"
+        className="fixed bottom-6 right-6 z-40 w-12 h-12 bg-stone-800 hover:bg-stone-900 text-white rounded-full shadow-lg shadow-stone-300/50 flex items-center justify-center transition-all hover:scale-105 active:scale-95"
         title="Create new card"
       >
-        +
+        <Plus size={20} strokeWidth={2} />
       </button>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 p-6">
-            <h2 className="text-lg font-semibold text-stone-800 mb-4">New Task</h2>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm" onClick={handleClose}>
+          <div className="bg-white rounded-2xl shadow-2xl shadow-stone-200/50 w-full max-w-lg mx-4 overflow-hidden" onClick={(e) => e.stopPropagation()}>
+            <div className="px-6 pt-5 pb-4">
+              <h2 className="text-base font-semibold text-stone-800 mb-3">New Task</h2>
 
-            <textarea
-              autoFocus
-              value={taskDescription}
-              onChange={(e) => setTaskDescription(e.target.value)}
-              placeholder="Describe your task..."
-              className="w-full h-32 px-3 py-2 border border-stone-200 rounded-lg text-sm text-stone-800 resize-none focus:outline-none focus:ring-2 focus:ring-cocoa-400 focus:border-transparent"
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && e.metaKey) handleCreate();
-              }}
-            />
+              <textarea
+                autoFocus
+                value={taskDescription}
+                onChange={(e) => setTaskDescription(e.target.value)}
+                placeholder="What would you like to work on?"
+                className="w-full h-28 px-3.5 py-2.5 bg-stone-50 border border-stone-200 rounded-xl text-sm text-stone-800 resize-none focus:outline-none focus:ring-2 focus:ring-stone-400/50 focus:border-stone-300 placeholder:text-stone-400 transition-shadow"
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && e.metaKey) handleCreate();
+                }}
+              />
 
-            {attachments.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-1.5">
-                {attachments.map((a) => (
-                  <span
-                    key={a.id}
-                    className="inline-flex items-center gap-1 px-2 py-1 bg-stone-100 rounded text-xs text-stone-600"
-                  >
-                    {a.name}
-                    <button
-                      onClick={() => setAttachments((prev) => prev.filter((p) => p.id !== a.id))}
-                      className="text-stone-400 hover:text-red-500"
+              {attachments.length > 0 && (
+                <div className="mt-2.5 flex flex-wrap gap-1.5">
+                  {attachments.map((a) => (
+                    <span
+                      key={a.id}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 bg-stone-100 rounded-lg text-xs text-stone-600"
                     >
-                      ✕
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
+                      <Paperclip size={11} />
+                      {a.name}
+                      <button
+                        onClick={() => setAttachments((prev) => prev.filter((p) => p.id !== a.id))}
+                        className="text-stone-400 hover:text-red-500 transition-colors"
+                      >
+                        <X size={12} />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <div className="mt-4 flex items-center justify-between">
+            <div className="px-6 py-3.5 bg-stone-50/50 border-t border-stone-100 flex items-center justify-between">
               <div>
                 <input
                   ref={fileInputRef}
@@ -119,26 +128,23 @@ export default function CardCreator({ pan, zoom }: Props) {
                 />
                 <button
                   onClick={() => fileInputRef.current?.click()}
-                  className="text-sm text-stone-500 hover:text-stone-700 transition-colors"
+                  className="inline-flex items-center gap-1.5 text-xs text-stone-500 hover:text-stone-700 transition-colors"
                 >
-                  + Attach files
+                  <Paperclip size={13} />
+                  Attach files
                 </button>
               </div>
               <div className="flex gap-2">
                 <button
-                  onClick={() => {
-                    setIsOpen(false);
-                    setTaskDescription('');
-                    setAttachments([]);
-                  }}
-                  className="px-4 py-2 text-sm text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+                  onClick={handleClose}
+                  className="px-4 py-1.5 text-sm text-stone-500 hover:text-stone-700 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleCreate}
                   disabled={!taskDescription.trim() || isCreating}
-                  className="px-4 py-2 text-sm bg-cocoa-600 hover:bg-cocoa-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                  className="px-4 py-1.5 text-sm bg-stone-800 hover:bg-stone-900 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
                 >
                   Create
                 </button>

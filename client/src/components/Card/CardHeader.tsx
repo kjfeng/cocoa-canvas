@@ -1,5 +1,6 @@
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
+import { Copy, Trash2, ArrowLeft, Link } from 'lucide-react';
 
 interface Props {
   card: Card;
@@ -12,38 +13,45 @@ export default function CardHeader({ card }: Props) {
   const cards = useCanvasStore((s) => s.cards);
 
   return (
-    <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-white sticky top-0 z-10">
-      <div className="flex-1 min-w-0">
-        <h2 className="text-lg font-semibold text-stone-800 truncate">{card.title}</h2>
-        <p className="text-sm text-stone-500 mt-0.5 truncate">{card.taskDescription}</p>
-        {card.copiedFromId && cards[card.copiedFromId] && (
-          <p className="text-xs text-cocoa-600 mt-1">
-            Copied from: {cards[card.copiedFromId].title}
-          </p>
-        )}
+    <div className="flex items-center justify-between px-5 py-3 border-b border-stone-100 bg-white flex-shrink-0">
+      <div className="flex items-center gap-3 flex-1 min-w-0">
+        <button
+          onClick={() => expandCard(null)}
+          className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors flex-shrink-0"
+          title="Back to canvas"
+        >
+          <ArrowLeft size={16} />
+        </button>
+        <div className="min-w-0">
+          <h2 className="text-sm font-semibold text-stone-800 truncate">{card.title}</h2>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="text-xs text-stone-400 truncate">{card.taskDescription}</p>
+            {card.copiedFromId && cards[card.copiedFromId] && (
+              <span className="inline-flex items-center gap-1 text-[11px] text-stone-400 flex-shrink-0">
+                <Link size={9} />
+                {cards[card.copiedFromId].title}
+              </span>
+            )}
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-2 ml-4">
+      <div className="flex items-center gap-0.5 ml-4">
         <button
           onClick={() => copyCard(card.id)}
-          className="px-3 py-1.5 text-xs text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+          className="p-2 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-lg transition-colors"
+          title="Copy card"
         >
-          Copy
+          <Copy size={14} />
         </button>
         <button
           onClick={() => {
             expandCard(null);
             removeCard(card.id);
           }}
-          className="px-3 py-1.5 text-xs text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+          title="Delete card"
         >
-          Delete
-        </button>
-        <button
-          onClick={() => expandCard(null)}
-          className="px-3 py-1.5 text-xs text-stone-500 hover:bg-stone-100 rounded-lg transition-colors"
-          title="Close (Esc)"
-        >
-          ✕
+          <Trash2 size={14} />
         </button>
       </div>
     </div>

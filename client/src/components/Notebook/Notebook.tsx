@@ -3,13 +3,15 @@ import { useCanvasStore } from '../../store/canvasStore';
 import { useNotebook } from '../../hooks/useNotebook';
 import type { Card } from '../../types';
 import Step from './Step';
-import FinalResults from './FinalResults';
+import { Play, Square, Plus, Loader2, Pause, Sparkles, Check } from 'lucide-react';
 
 interface Props {
   card: Card;
+  selectedStepId: string | null;
+  onSelectStep: (id: string | null) => void;
 }
 
-export default function Notebook({ card }: Props) {
+export default function Notebook({ card, selectedStepId, onSelectStep }: Props) {
   const { runAgentStep, runSynthesis, runAll, stopAll } = useNotebook(card);
   const runAllAbortCardId = useCanvasStore((s) => s.runAllAbortCardId);
   const addStep = useCanvasStore((s) => s.addStep);
@@ -59,10 +61,10 @@ export default function Notebook({ card }: Props) {
 
   if (card.isGeneratingPlan) {
     return (
-      <div className="p-6 flex items-center justify-center">
-        <div className="flex items-center gap-3 text-stone-500">
-          <span className="w-5 h-5 border-2 border-stone-300 border-t-stone-600 rounded-full animate-spin" />
-          <span>Generating plan...</span>
+      <div className="p-8 flex items-center justify-center h-full">
+        <div className="flex items-center gap-3 text-stone-400">
+          <Loader2 size={18} className="animate-spin" />
+          <span className="text-sm">Generating plan...</span>
         </div>
       </div>
     );
@@ -70,7 +72,7 @@ export default function Notebook({ card }: Props) {
 
   if (card.steps.length === 0) {
     return (
-      <div className="p-6 text-center text-stone-400 text-sm">
+      <div className="p-8 text-center text-stone-400 text-sm">
         No steps yet. This card may still be loading.
       </div>
     );
@@ -80,40 +82,45 @@ export default function Notebook({ card }: Props) {
   const anyStepRunning = card.steps.some((s) => s.isRunning);
 
   return (
-    <div className="p-6">
+    <div className="p-5">
       {/* Controls */}
-      <div className="flex items-center gap-2 mb-4">
+      <div className="flex items-center gap-2.5 mb-4">
         {isRunningAll ? (
           <button
             onClick={stopAll}
-            className="px-4 py-2 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors active:scale-95"
           >
+            <Square size={13} fill="currentColor" />
             Stop
           </button>
         ) : (
           <button
             onClick={handleRunAll}
             disabled={anyStepRunning}
-            className="px-4 py-2 text-sm bg-cocoa-600 hover:bg-cocoa-700 text-white rounded-lg transition-colors disabled:opacity-50"
+            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-stone-800 hover:bg-stone-900 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
           >
+            <Play size={13} fill="currentColor" />
             Run All
           </button>
         )}
         {pausedAtIndex !== null && (
-          <span className="text-xs text-amber-600 bg-amber-50 px-2 py-1 rounded">
-            Paused at step {pausedAtIndex + 1} (awaiting your input)
+          <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
+            <Pause size={11} />
+            Waiting for input on step {pausedAtIndex + 1}
           </span>
         )}
       </div>
 
       {/* Steps */}
-      <div className="space-y-3">
+      <div className="space-y-1.5">
         {card.steps.map((step, index) => (
           <Step
             key={step.id}
             card={card}
             step={step}
             index={index}
+            isSelected={selectedStepId === step.id}
+            onSelect={() => onSelectStep(selectedStepId === step.id ? null : step.id)}
             onRunAgent={() => runAgentStep(index)}
             isPausedHere={pausedAtIndex === index}
             onUserSubmit={() => {
@@ -125,17 +132,41 @@ export default function Notebook({ card }: Props) {
         ))}
       </div>
 
-      {/* Add step button */}
+      {/* Add step */}
       <button
         onClick={() => addStep(card.id, card.steps.length - 1)}
-        className="mt-3 w-full py-2 text-xs text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg border border-dashed border-stone-200 transition-colors"
+        className="mt-2 w-full py-1.5 text-xs text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg border border-dashed border-stone-200 transition-colors flex items-center justify-center gap-1.5"
       >
-        + Add step
+        <Plus size={13} />
+        Add step
       </button>
 
-      {/* Final Results */}
+      {/* Final Results entry */}
       {(allStepsComplete || card.finalResult !== null) && (
-        <FinalResults card={card} onRunSynthesis={runSynthesis} />
+        <button
+          onClick={() => onSelectStep(selectedStepId === 'final' ? null : 'final')}
+          className={`mt-4 w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left transition-all ${
+            selectedStepId === 'final'
+              ? 'bg-amber-50 ring-1 ring-amber-200'
+              : 'hover:bg-stone-50 ring-1 ring-stone-200/80'
+          }`}
+        >
+          <span className="w-7 h-7 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center flex-shrink-0">
+            {card.isFinalResultRunning ? <Loader2 size={13} className="animate-spin" /> : card.finalResult ? <Check size={13} strokeWidth={2.5} /> : <Sparkles size={13} />}
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-medium text-stone-700">Final Results</p>
+            {card.finalResult && (
+              <p className="text-xs text-stone-400 mt-0.5 line-clamp-1">{card.finalResult.slice(0, 100)}</p>
+            )}
+            {card.isFinalResultRunning && !card.finalResult && (
+              <p className="text-xs text-stone-400 mt-0.5">Synthesizing...</p>
+            )}
+            {!card.finalResult && !card.isFinalResultRunning && (
+              <p className="text-xs text-stone-400 mt-0.5">Click to synthesize all results</p>
+            )}
+          </div>
+        </button>
       )}
     </div>
   );

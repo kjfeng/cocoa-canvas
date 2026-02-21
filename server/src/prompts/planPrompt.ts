@@ -13,7 +13,7 @@ ${taskDescription}
   }
 
   prompt += `
-Create a thoughtful, actionable notebook plan to complete this task. The plan should have 3-7 focused steps.
+Create a thoughtful, actionable notebook plan to complete this task. The plan should have 3-5 focused steps.
 
 For each step, decide whether it should be completed by the AI agent or the human user:
 - Assign steps to "agent" when they involve research, analysis, writing, coding, or synthesis
