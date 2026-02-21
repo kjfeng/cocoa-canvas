@@ -74,7 +74,14 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
       </p>
 
       {helpText && (
-        <div className="mb-3 p-3 bg-white rounded-xl border border-sky-100 text-sm">
+        <div className="mb-3 p-3 bg-white rounded-xl border border-sky-100 text-sm relative group">
+          <button
+            onClick={() => setHelpText('')}
+            className="absolute top-2 right-2 p-1 text-stone-300 hover:text-stone-500 hover:bg-stone-100 rounded-md transition-colors opacity-0 group-hover:opacity-100"
+            title="Dismiss"
+          >
+            <X size={12} />
+          </button>
           <div className="prose prose-sm prose-stone max-w-none">
             <MarkdownRenderer content={helpText} />
           </div>
