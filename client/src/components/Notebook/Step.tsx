@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card, Step as StepType } from '../../types';
+import { tryParseStructuredResult, getStructuredSummary } from '../../utils/parseStructuredResult';
 import StepEditor from './StepEditor';
 import UserStepInput from './UserStepInput';
 import { Play, Check, Loader2, X, Bot, User, AlertTriangle, ChevronRight } from 'lucide-react';
@@ -41,17 +42,24 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
   const showUserInput = step.assignment === 'user' && (isPausedHere || (!step.result && !step.isRunning));
 
   // Generate a brief plain-text preview from the result
-  const preview = step.result
-    ? step.result
-        .replace(/^#{1,6}\s+/gm, '')  // strip markdown headers
-        .replace(/\*\*|__/g, '')       // strip bold
-        .replace(/\*|_/g, '')          // strip italic
-        .replace(/`{1,3}[^`]*`{1,3}/g, '') // strip code
-        .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') // links to text
-        .replace(/\n+/g, ' ')
-        .trim()
-        .slice(0, 120)
-    : null;
+  const preview = (() => {
+    if (!step.result) return null;
+    // Try structured parse first
+    const structured = tryParseStructuredResult(step.result);
+    if (structured) {
+      return getStructuredSummary(structured);
+    }
+    // Fallback: strip markdown
+    return step.result
+      .replace(/^#{1,6}\s+/gm, '')
+      .replace(/\*\*|__/g, '')
+      .replace(/\*|_/g, '')
+      .replace(/`{1,3}[^`]*`{1,3}/g, '')
+      .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+      .replace(/\n+/g, ' ')
+      .trim()
+      .slice(0, 120);
+  })();
 
   return (
     <div>
@@ -71,19 +79,22 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
           <button
             onClick={handleRun}
             disabled={step.isRunning || (step.assignment === 'user' && !isPausedHere && step.result === null)}
-            className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
+            className={`group/btn w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
               step.isRunning
                 ? 'bg-blue-100 text-blue-500'
                 : step.result !== null
-                  ? 'bg-emerald-100 text-emerald-500'
+                  ? 'bg-emerald-100 text-emerald-500 hover:bg-stone-100 hover:text-stone-500'
                   : 'bg-stone-100 text-stone-400 hover:bg-stone-200 hover:text-stone-600'
             } disabled:opacity-40`}
-            title={step.assignment === 'agent' ? 'Run step' : 'User step'}
+            title={step.result !== null && !step.isRunning ? 'Re-run step' : step.assignment === 'agent' ? 'Run step' : 'User step'}
           >
             {step.isRunning ? (
               <Loader2 size={13} className="animate-spin" />
             ) : step.result !== null ? (
-              <Check size={13} strokeWidth={2.5} />
+              <>
+                <Check size={13} strokeWidth={2.5} className="group-hover/btn:hidden" />
+                <Play size={12} fill="currentColor" className="hidden group-hover/btn:block" />
+              </>
             ) : (
               <Play size={12} fill="currentColor" />
             )}

@@ -7,6 +7,52 @@ export interface Attachment {
 
 export type StepAssignment = 'agent' | 'user';
 
+// --- Structured result types ---
+
+export interface StructuredMarkdown {
+  type: 'markdown';
+  title?: string;
+  data: { content: string };
+}
+
+export interface StructuredChecklist {
+  type: 'checklist';
+  title?: string;
+  data: { items: { label: string; checked: boolean; detail?: string }[] };
+}
+
+export interface StructuredTable {
+  type: 'table';
+  title?: string;
+  data: { headers: string[]; rows: string[][] };
+}
+
+export interface StructuredCode {
+  type: 'code';
+  title?: string;
+  data: { language: string; filename?: string; code: string; explanation?: string };
+}
+
+export interface StructuredComparison {
+  type: 'comparison';
+  title?: string;
+  data: { columns: { title: string; items: string[] }[] };
+}
+
+export interface StructuredKeyValue {
+  type: 'key_value';
+  title?: string;
+  data: { pairs: { key: string; value: string }[] };
+}
+
+export type StructuredResult =
+  | StructuredMarkdown
+  | StructuredChecklist
+  | StructuredTable
+  | StructuredCode
+  | StructuredComparison
+  | StructuredKeyValue;
+
 export interface Step {
   id: string;
   description: string;

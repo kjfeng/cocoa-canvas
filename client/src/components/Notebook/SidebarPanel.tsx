@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card, Step } from '../../types';
 import MarkdownRenderer from '../Markdown/MarkdownRenderer';
+import WidgetRenderer from '../Widgets/WidgetRenderer';
 import { X, Loader2, Pencil, RefreshCw, Sparkles, Bot, User } from 'lucide-react';
 import { useNotebook } from '../../hooks/useNotebook';
 
@@ -122,12 +123,12 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
           </div>
         )}
         {hasResult && (
-          <div className="prose prose-sm prose-stone max-w-none">
-            <MarkdownRenderer content={selectedStep.result!} />
-            {selectedStep.isRunning && (
-              <span className="inline-block w-0.5 h-4 bg-stone-400 animate-pulse ml-0.5 rounded-full" />
-            )}
-          </div>
+          <WidgetRenderer
+            cardId={card.id}
+            stepId={selectedStep.id}
+            result={selectedStep.result!}
+            isStreaming={selectedStep.isRunning}
+          />
         )}
         {!hasResult && !selectedStep.isRunning && (
           <p className="text-sm text-stone-400 text-center py-8">No result yet. Run this step to see output here.</p>

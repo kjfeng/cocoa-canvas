@@ -6,7 +6,9 @@ import { fileURLToPath } from 'url';
 import { notebooksRouter } from './routes/notebooks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+// Try multiple possible .env locations (works for both tsx dev and compiled dist/)
 dotenv.config({ path: path.resolve(__dirname, '../../.env') });
+dotenv.config({ path: path.resolve(__dirname, '../.env') });
 
 const app = express();
 const PORT = process.env.PORT || 3001;

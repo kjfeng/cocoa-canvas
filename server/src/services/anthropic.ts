@@ -1,13 +1,17 @@
 import Anthropic from '@anthropic-ai/sdk';
 
-const client = new Anthropic({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const MODEL = 'claude-sonnet-4-6';
 
-const MODEL = 'claude-sonnet-4-20250514';
+let _client: Anthropic | null = null;
+function getClient(): Anthropic {
+  if (!_client) {
+    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+  }
+  return _client;
+}
 
 export async function generateJSON(prompt: string): Promise<string> {
-  const response = await client.messages.create({
+  const response = await getClient().messages.create({
     model: MODEL,
     max_tokens: 2048,
     messages: [{ role: 'user', content: prompt }],
@@ -21,7 +25,7 @@ export async function streamText(
   prompt: string,
   onChunk: (text: string) => void,
 ): Promise<void> {
-  const stream = client.messages.stream({
+  const stream = getClient().messages.stream({
     model: MODEL,
     max_tokens: 4096,
     messages: [{ role: 'user', content: prompt }],
