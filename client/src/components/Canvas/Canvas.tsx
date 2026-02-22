@@ -1,6 +1,8 @@
 import { useRef, useState, useCallback, useEffect } from 'react';
+import { Xwrapper } from 'react-xarrows';
 import { useCanvasStore } from '../../store/canvasStore';
 import CanvasCard from './CanvasCard';
+import ForkConnections, { XarrowPanZoomUpdater } from './ForkConnections';
 import CardCreator from './CardCreator';
 import CardDetail from '../Card/CardDetail';
 
@@ -72,37 +74,42 @@ export default function Canvas() {
   const cardList = Object.values(cards).sort((a, b) => a.createdAt - b.createdAt);
 
   return (
-    <div
-      ref={containerRef}
-      className="w-full h-full relative overflow-hidden bg-stone-50"
-      style={{
-        backgroundImage:
-          'radial-gradient(circle, #d4d0cc 1px, transparent 1px)',
-        backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
-        backgroundPosition: `${pan.x}px ${pan.y}px`,
-        cursor: isPanning ? 'grabbing' : 'default',
-      }}
-      onMouseDown={handleMouseDown}
-      onMouseMove={handleMouseMove}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
-    >
+    <Xwrapper>
       <div
+        ref={containerRef}
+        className="w-full h-full relative overflow-hidden bg-stone-50"
         style={{
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: '0 0',
+          backgroundImage:
+            'radial-gradient(circle, #d4d0cc 1px, transparent 1px)',
+          backgroundSize: `${20 * zoom}px ${20 * zoom}px`,
+          backgroundPosition: `${pan.x}px ${pan.y}px`,
+          cursor: isPanning ? 'grabbing' : 'default',
         }}
+        onMouseDown={handleMouseDown}
+        onMouseMove={handleMouseMove}
+        onMouseUp={handleMouseUp}
+        onMouseLeave={handleMouseUp}
       >
-        {cardList.map((card) => (
-          <CanvasCard key={card.id} card={card} />
-        ))}
+        <div
+          style={{
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: '0 0',
+          }}
+        >
+          {cardList.map((card) => (
+            <CanvasCard key={card.id} card={card} />
+          ))}
+        </div>
+
+        <ForkConnections />
+        <XarrowPanZoomUpdater pan={pan} zoom={zoom} />
+
+        <CardCreator pan={pan} zoom={zoom} />
+
+        {expandedCardId && cards[expandedCardId] && (
+          <CardDetail card={cards[expandedCardId]} />
+        )}
       </div>
-
-      <CardCreator pan={pan} zoom={zoom} />
-
-      {expandedCardId && cards[expandedCardId] && (
-        <CardDetail card={cards[expandedCardId]} />
-      )}
-    </div>
+    </Xwrapper>
   );
 }

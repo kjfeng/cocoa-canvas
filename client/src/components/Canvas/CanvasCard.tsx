@@ -1,4 +1,5 @@
 import { useRef, useCallback, useState } from 'react';
+import { useXarrow } from 'react-xarrows';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
 import CardSummary from '../Card/CardSummary';
@@ -9,6 +10,7 @@ interface Props {
 
 export default function CanvasCard({ card }: Props) {
   const updateCardPosition = useCanvasStore((s) => s.updateCardPosition);
+  const updateXarrow = useXarrow();
   const isDragging = useRef(false);
   const dragOffset = useRef({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
@@ -34,6 +36,7 @@ export default function CanvasCard({ card }: Props) {
           x: (ev.clientX - dragOffset.current.x),
           y: (ev.clientY - dragOffset.current.y),
         });
+        updateXarrow();
       };
 
       const handleUp = () => {
@@ -52,6 +55,8 @@ export default function CanvasCard({ card }: Props) {
 
   return (
     <div
+      id={`card-${card.id}`}
+      data-card-id={card.id}
       className={`absolute select-none ${dragging ? 'z-50' : 'z-10'}`}
       style={{
         left: card.position.x,

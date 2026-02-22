@@ -15,7 +15,7 @@ interface CanvasState {
   setCardTitle: (cardId: string, title: string) => void;
   setCardPlan: (cardId: string, title: string, steps: { description: string; assignment: StepAssignment }[]) => void;
   setCardGeneratingPlan: (cardId: string, generating: boolean) => void;
-  copyCard: (cardId: string) => string;
+  forkCard: (cardId: string, selectedStepIndices: number[]) => string;
   expandCard: (cardId: string | null) => void;
 
   // Step CRUD
@@ -60,7 +60,7 @@ export const useCanvasStore = create<CanvasState>()(
               finalResult: null,
               isFinalResultRunning: false,
               isGeneratingPlan: false,
-              copiedFromId: null,
+              forkedFromId: null,
               position,
               createdAt: Date.now(),
             },
@@ -128,20 +128,30 @@ export const useCanvasStore = create<CanvasState>()(
         }));
       },
 
-      copyCard: (cardId) => {
+      forkCard: (cardId, selectedStepIndices) => {
         const original = get().cards[cardId];
         if (!original) return '';
         const newId = nanoid();
+        const selectedSteps = selectedStepIndices
+          .sort((a, b) => a - b)
+          .map((i) => original.steps[i])
+          .filter(Boolean);
         const newCard: Card = {
           ...original,
           id: newId,
-          copiedFromId: cardId,
+          forkedFromId: cardId,
           position: { x: original.position.x + 40, y: original.position.y + 40 },
           createdAt: Date.now(),
-          steps: original.steps.map((s) => ({
+          finalResult: null,
+          isFinalResultRunning: false,
+          isGeneratingPlan: false,
+          steps: selectedSteps.map((s) => ({
             ...s,
             id: nanoid(),
-            userAttachments: [...s.userAttachments],
+            result: null,
+            isStale: false,
+            isRunning: false,
+            userAttachments: [],
           })),
         };
         set((state) => ({

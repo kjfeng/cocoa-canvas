@@ -72,7 +72,7 @@ export interface Card {
   finalResult: string | null;
   isFinalResultRunning: boolean;
   isGeneratingPlan: boolean;
-  copiedFromId: string | null;
+  forkedFromId: string | null;
   position: { x: number; y: number };
   createdAt: number;
 }

@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
-import { Expand, Copy, Trash2, Check, Loader2, Link, Sparkles } from 'lucide-react';
+import { Expand, GitFork, Trash2, Check, Loader2, Link, Sparkles } from 'lucide-react';
+import ForkDialog from './ForkDialog';
 
 interface Props {
   card: Card;
@@ -9,13 +11,14 @@ interface Props {
 export default function CardSummary({ card }: Props) {
   const expandCard = useCanvasStore((s) => s.expandCard);
   const removeCard = useCanvasStore((s) => s.removeCard);
-  const copyCard = useCanvasStore((s) => s.copyCard);
   const cards = useCanvasStore((s) => s.cards);
+  const [showForkDialog, setShowForkDialog] = useState(false);
 
   const completedSteps = card.steps.filter((s) => s.result !== null).length;
   const totalSteps = card.steps.length;
 
   return (
+    <>
     <div className="w-72 bg-white rounded-xl shadow-sm border border-stone-200/80 overflow-hidden hover:shadow-md transition-all group">
       <div className="p-4">
         <div className="flex items-start justify-between gap-2 mb-1.5">
@@ -34,10 +37,10 @@ export default function CardSummary({ card }: Props) {
           </button>
         </div>
 
-        {card.copiedFromId && cards[card.copiedFromId] && (
+        {card.forkedFromId && cards[card.forkedFromId] && (
           <div className="flex items-center gap-1 text-[11px] text-stone-400 mb-2">
             <Link size={10} />
-            <span className="truncate">{cards[card.copiedFromId].title}</span>
+            <span className="truncate">{cards[card.forkedFromId].title}</span>
           </div>
         )}
 
@@ -124,14 +127,18 @@ export default function CardSummary({ card }: Props) {
         <button
           onClick={(e) => {
             e.stopPropagation();
-            copyCard(card.id);
+            setShowForkDialog(true);
           }}
           className="flex-1 py-2 text-xs text-stone-500 hover:text-stone-800 hover:bg-stone-50 transition-colors flex items-center justify-center gap-1.5"
         >
-          <Copy size={12} />
-          Copy
+          <GitFork size={12} />
+          Fork
         </button>
       </div>
     </div>
+    {showForkDialog && (
+      <ForkDialog card={card} onClose={() => setShowForkDialog(false)} />
+    )}
+    </>
   );
 }
