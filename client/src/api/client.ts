@@ -116,3 +116,7 @@ export function storeFormCode(stepId: string, code: string): void {
 export function getStoredFormCode(stepId: string): string | null {
   return formCodeStore.get(stepId) ?? null;
 }
+
+export function clearStoredFormCode(stepId: string): void {
+  formCodeStore.delete(stepId);
+}

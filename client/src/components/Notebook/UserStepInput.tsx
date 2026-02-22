@@ -1,6 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { useCanvasStore } from '../../store/canvasStore';
-import { streamHelp, generateInputForm, getCachedInputForm, clearCachedInputForm, storeFormCode, getStoredFormCode } from '../../api/client';
+import { streamHelp, generateInputForm, getCachedInputForm, clearCachedInputForm, storeFormCode, getStoredFormCode, clearStoredFormCode } from '../../api/client';
 import type { Card, Step, Attachment } from '../../types';
 import { nanoid } from 'nanoid';
 import MarkdownRenderer from '../Markdown/MarkdownRenderer';
@@ -82,6 +82,7 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
 
   const regenerateForm = useCallback(() => {
     clearCachedInputForm(card.id, index);
+    clearStoredFormCode(step.id);
     setFormCode(null);
     setFormFailed(false);
     setUseFreeform(false);
