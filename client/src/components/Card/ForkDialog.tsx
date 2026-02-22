@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
 import { GitFork, Bot, User, X, Check } from 'lucide-react';
@@ -37,7 +38,7 @@ export default function ForkDialog({ card, onClose }: Props) {
     onClose();
   };
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm" onClick={onClose}>
       <div
         className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 overflow-hidden"
@@ -147,6 +148,7 @@ export default function ForkDialog({ card, onClose }: Props) {
           </div>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

@@ -30,7 +30,7 @@ export default function ForkConnections() {
           key={`${c.parentId}-${c.childId}`}
           start={`card-${c.parentId}`}
           end={`card-${c.childId}`}
-          color="#888888"
+          color="#aaaaaa"
           strokeWidth={1.5}
           // dashness={{ strokeLen: 6, nonStrokeLen: 4 }}
           headSize={5}
