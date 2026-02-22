@@ -1,6 +1,7 @@
 import type { PlanRequest, PlanResponse, StepRequest, HelpRequest, SynthesisRequest, InputFormRequest } from '../types';
 
-const BASE = '/api/notebooks';
+const SERVER = import.meta.env.VITE_SERVER_URL || '';
+const BASE = `${SERVER}/api/notebooks`;
 
 export async function generatePlan(req: PlanRequest): Promise<PlanResponse> {
   const res = await fetch(`${BASE}/plan`, {

@@ -6,8 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
-    "preview": "vite preview",
-    "signaling": "PORT=3333 node ../node_modules/y-webrtc/bin/server.js"
+    "preview": "vite preview"
   },
   "dependencies": {
     "lucide-react": "^0.575.0",
