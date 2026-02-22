@@ -59,18 +59,16 @@ export default function CardHeader({ card }: Props) {
           >
             <GitFork size={14} />
           </button>
-          {isOwner && (
-            <button
-              onClick={() => {
-                expandCard(null);
-                removeCard(card.id);
-              }}
-              className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-              title="Delete card"
-            >
-              <Trash2 size={14} />
-            </button>
-          )}
+          <button
+            onClick={() => {
+              expandCard(null);
+              removeCard(card.id);
+            }}
+            className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+            title="Delete card"
+          >
+            <Trash2 size={14} />
+          </button>
         </div>
       </div>
       {showForkDialog && (

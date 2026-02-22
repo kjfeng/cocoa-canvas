@@ -73,8 +73,6 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       removeCard: (cardId) => {
-        const card = get().cards[cardId];
-        if (card && !isCardOwner(card)) return;
         set((state) => {
           const { [cardId]: _, ...rest } = state.cards;
           return {

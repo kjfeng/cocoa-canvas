@@ -27,18 +27,16 @@ export default function CardSummary({ card }: Props) {
           <h3 className="font-medium text-stone-800 text-sm leading-snug line-clamp-2 flex-1">
             {card.title}
           </h3>
-          {isOwner && (
-            <button
-              onClick={(e) => {
-                e.stopPropagation();
-                removeCard(card.id);
-              }}
-              className="text-stone-300 hover:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
-              title="Delete card"
-            >
-              <Trash2 size={13} />
-            </button>
-          )}
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              removeCard(card.id);
+            }}
+            className="text-stone-300 hover:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+            title="Delete card"
+          >
+            <Trash2 size={13} />
+          </button>
         </div>
 
         {card.createdByName && (
