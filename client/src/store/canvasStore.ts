@@ -1,7 +1,8 @@
 import { create } from 'zustand';
-import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 import type { Card, Step, Attachment, StepAssignment } from '../types';
+import { useUserStore } from './userStore';
+import { isCardOwner } from '../utils/ownership';
 
 interface CanvasState {
   cards: Record<string, Card>;
@@ -40,7 +41,6 @@ interface CanvasState {
 }
 
 export const useCanvasStore = create<CanvasState>()(
-  persist(
     (set, get) => ({
       cards: {},
       expandedCardId: null,
@@ -61,6 +61,9 @@ export const useCanvasStore = create<CanvasState>()(
               isFinalResultRunning: false,
               isGeneratingPlan: false,
               forkedFromId: null,
+              createdBy: useUserStore.getState().userId,
+              createdByName: useUserStore.getState().userName,
+              createdByColor: useUserStore.getState().userColor,
               position,
               createdAt: Date.now(),
             },
@@ -70,6 +73,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       removeCard: (cardId) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => {
           const { [cardId]: _, ...rest } = state.cards;
           return {
@@ -89,6 +94,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setCardTitle: (cardId, title) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => ({
           cards: {
             ...state.cards,
@@ -98,6 +105,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setCardPlan: (cardId, title, steps) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => ({
           cards: {
             ...state.cards,
@@ -120,6 +129,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setCardGeneratingPlan: (cardId, generating) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => ({
           cards: {
             ...state.cards,
@@ -140,6 +151,9 @@ export const useCanvasStore = create<CanvasState>()(
           ...original,
           id: newId,
           forkedFromId: cardId,
+          createdBy: useUserStore.getState().userId,
+          createdByName: useUserStore.getState().userName,
+          createdByColor: useUserStore.getState().userColor,
           position: { x: original.position.x + 40, y: original.position.y + 40 },
           createdAt: Date.now(),
           finalResult: null,
@@ -165,6 +179,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       addStep: (cardId, afterIndex) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           const newStep: Step = {
@@ -185,6 +201,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       removeStep: (cardId, stepId) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -197,6 +215,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       updateStepDescription: (cardId, stepId, description) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -212,6 +232,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       toggleStepAssignment: (cardId, stepId) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -231,6 +253,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setStepResult: (cardId, stepId, result) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -248,6 +272,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       appendStepResult: (cardId, stepId, chunk) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -265,6 +291,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setStepRunning: (cardId, stepId, running) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -282,6 +310,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setStepStale: (cardId, stepId, stale) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -299,6 +329,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       markDownstreamStale: (cardId, stepIndex) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -316,6 +348,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setStepUserAttachments: (cardId, stepId, attachments) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -333,6 +367,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setFinalResult: (cardId, result) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => ({
           cards: {
             ...state.cards,
@@ -342,6 +378,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       appendFinalResult: (cardId, chunk) => {
+        const existing = get().cards[cardId];
+        if (existing && !isCardOwner(existing)) return;
         set((state) => {
           const card = state.cards[cardId];
           return {
@@ -354,6 +392,8 @@ export const useCanvasStore = create<CanvasState>()(
       },
 
       setFinalResultRunning: (cardId, running) => {
+        const card = get().cards[cardId];
+        if (card && !isCardOwner(card)) return;
         set((state) => ({
           cards: {
             ...state.cards,
@@ -366,21 +406,4 @@ export const useCanvasStore = create<CanvasState>()(
         set({ runAllAbortCardId: cardId });
       },
     }),
-    {
-      name: 'cocoa-canvas-storage',
-      partialize: (state) => ({
-        cards: Object.fromEntries(
-          Object.entries(state.cards).map(([id, card]) => [
-            id,
-            {
-              ...card,
-              isGeneratingPlan: false,
-              isFinalResultRunning: false,
-              steps: card.steps.map((s) => ({ ...s, isRunning: false })),
-            },
-          ]),
-        ),
-      }),
-    },
-  ),
 );

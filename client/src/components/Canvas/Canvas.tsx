@@ -5,11 +5,16 @@ import CanvasCard from './CanvasCard';
 import ForkConnections, { XarrowPanZoomUpdater } from './ForkConnections';
 import CardCreator from './CardCreator';
 import CardDetail from '../Card/CardDetail';
+import CursorOverlay from './CursorOverlay';
+import PresenceIndicator from './PresenceIndicator';
+import { useAwareness } from '../../collaboration/useAwareness';
+import { awareness } from '../../collaboration/yjsProvider';
 
 export default function Canvas() {
   const cards = useCanvasStore((s) => s.cards);
   const expandedCardId = useCanvasStore((s) => s.expandedCardId);
   const containerRef = useRef<HTMLDivElement>(null);
+  const peers = useAwareness();
 
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
@@ -20,6 +25,7 @@ export default function Canvas() {
   const zoomRef = useRef(zoom);
   panRef.current = pan;
   zoomRef.current = zoom;
+  const lastCursorUpdate = useRef(0);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
@@ -34,14 +40,31 @@ export default function Canvas() {
 
   const handleMouseMove = useCallback(
     (e: React.MouseEvent) => {
-      if (!isPanning) return;
-      setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+      if (isPanning) {
+        setPan({ x: e.clientX - panStart.current.x, y: e.clientY - panStart.current.y });
+      }
+      // Broadcast cursor position (throttled to 50ms)
+      const now = Date.now();
+      if (now - lastCursorUpdate.current < 50) return;
+      lastCursorUpdate.current = now;
+      const rect = containerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      const canvasX = (e.clientX - rect.left - panRef.current.x) / zoomRef.current;
+      const canvasY = (e.clientY - rect.top - panRef.current.y) / zoomRef.current;
+      const local = awareness.getLocalState();
+      awareness.setLocalStateField('user', { ...local?.user, cursor: { x: canvasX, y: canvasY } });
     },
     [isPanning],
   );
 
   const handleMouseUp = useCallback(() => {
     setIsPanning(false);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setIsPanning(false);
+    const local = awareness.getLocalState();
+    awareness.setLocalStateField('user', { ...local?.user, cursor: null });
   }, []);
 
   // Zoom toward cursor position
@@ -88,7 +111,7 @@ export default function Canvas() {
         onMouseDown={handleMouseDown}
         onMouseMove={handleMouseMove}
         onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
+        onMouseLeave={handleMouseLeave}
       >
         <div
           style={{
@@ -105,6 +128,8 @@ export default function Canvas() {
         <XarrowPanZoomUpdater pan={pan} zoom={zoom} />
 
         <CardCreator pan={pan} zoom={zoom} />
+        <CursorOverlay peers={peers} pan={pan} zoom={zoom} />
+        <PresenceIndicator />
 
         {expandedCardId && cards[expandedCardId] && (
           <CardDetail card={cards[expandedCardId]} />

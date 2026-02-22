@@ -3,6 +3,7 @@ import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
 import { GitFork, Trash2, ArrowLeft, Link } from 'lucide-react';
 import ForkDialog from './ForkDialog';
+import { isCardOwner } from '../../utils/ownership';
 
 interface Props {
   card: Card;
@@ -13,6 +14,7 @@ export default function CardHeader({ card }: Props) {
   const removeCard = useCanvasStore((s) => s.removeCard);
   const cards = useCanvasStore((s) => s.cards);
   const [showForkDialog, setShowForkDialog] = useState(false);
+  const isOwner = isCardOwner(card);
 
   return (
     <>
@@ -28,6 +30,17 @@ export default function CardHeader({ card }: Props) {
           <div className="min-w-0">
             <h2 className="text-sm font-semibold text-stone-800 truncate">{card.title}</h2>
             <div className="flex items-center gap-2 mt-0.5">
+              {card.createdByName && (
+                <span className="inline-flex items-center gap-1 flex-shrink-0">
+                  <span
+                    className="w-3.5 h-3.5 rounded-full flex items-center justify-center text-[7px] font-medium text-white"
+                    style={{ backgroundColor: card.createdByColor || '#94a3b8' }}
+                  >
+                    {card.createdByName.charAt(0).toUpperCase()}
+                  </span>
+                  <span className="text-[11px] text-stone-400">{card.createdByName}</span>
+                </span>
+              )}
               <p className="text-xs text-stone-400 truncate">{card.taskDescription}</p>
               {card.forkedFromId && cards[card.forkedFromId] && (
                 <span className="inline-flex items-center gap-1 text-[11px] text-stone-400 flex-shrink-0">
@@ -46,16 +59,18 @@ export default function CardHeader({ card }: Props) {
           >
             <GitFork size={14} />
           </button>
-          <button
-            onClick={() => {
-              expandCard(null);
-              removeCard(card.id);
-            }}
-            className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
-            title="Delete card"
-          >
-            <Trash2 size={14} />
-          </button>
+          {isOwner && (
+            <button
+              onClick={() => {
+                expandCard(null);
+                removeCard(card.id);
+              }}
+              className="p-2 text-stone-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"
+              title="Delete card"
+            >
+              <Trash2 size={14} />
+            </button>
+          )}
         </div>
       </div>
       {showForkDialog && (

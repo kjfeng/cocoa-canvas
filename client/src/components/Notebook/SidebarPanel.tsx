@@ -15,9 +15,10 @@ interface Props {
   selectedIndex: number;
   showFinal: boolean;
   onClose: () => void;
+  isOwner: boolean;
 }
 
-export default function SidebarPanel({ card, selectedStep, selectedIndex, showFinal, onClose }: Props) {
+export default function SidebarPanel({ card, selectedStep, selectedIndex, showFinal, onClose, isOwner }: Props) {
   const { runSynthesis } = useNotebook(card);
   const [isEditing, setIsEditing] = useState(false);
   const [editValue, setEditValue] = useState('');
@@ -32,7 +33,7 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
             Final Results
           </h3>
           <div className="flex items-center gap-1">
-            {card.finalResult && !isEditing && (
+            {isOwner && card.finalResult && !isEditing && (
               <button
                 onClick={() => { setEditValue(card.finalResult || ''); setIsEditing(true); }}
                 className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"
@@ -40,14 +41,16 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
                 <Pencil size={13} />
               </button>
             )}
-            <button
-              onClick={runSynthesis}
-              disabled={card.isFinalResultRunning}
-              className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors disabled:opacity-40"
-            >
-              {card.isFinalResultRunning ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
-              {card.finalResult ? 'Re-synthesize' : 'Synthesize'}
-            </button>
+            {isOwner && (
+              <button
+                onClick={runSynthesis}
+                disabled={card.isFinalResultRunning}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs text-stone-500 hover:text-stone-700 hover:bg-stone-100 rounded-md transition-colors disabled:opacity-40"
+              >
+                {card.isFinalResultRunning ? <Loader2 size={12} className="animate-spin" /> : <RefreshCw size={12} />}
+                {card.finalResult ? 'Re-synthesize' : 'Synthesize'}
+              </button>
+            )}
             <button onClick={onClose} className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors">
               <X size={14} />
             </button>
@@ -109,7 +112,7 @@ export default function SidebarPanel({ card, selectedStep, selectedIndex, showFi
           )}
         </div>
         <div className="flex items-center gap-1">
-          {isUserStep && hasResult && !isEditing && (
+          {isOwner && isUserStep && hasResult && !isEditing && (
             <button
               onClick={() => { setEditValue(selectedStep.result || ''); setIsEditing(true); }}
               className="p-1.5 text-stone-400 hover:text-stone-600 hover:bg-stone-100 rounded-md transition-colors"

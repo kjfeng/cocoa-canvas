@@ -73,6 +73,9 @@ export interface Card {
   isFinalResultRunning: boolean;
   isGeneratingPlan: boolean;
   forkedFromId: string | null;
+  createdBy?: string;
+  createdByName?: string;
+  createdByColor?: string;
   position: { x: number; y: number };
   createdAt: number;
 }

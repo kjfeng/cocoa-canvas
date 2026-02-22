@@ -15,9 +15,10 @@ interface Props {
   onRunAgent: () => void;
   isPausedHere: boolean;
   onUserSubmit: () => void;
+  isOwner: boolean;
 }
 
-export default function Step({ card, step, index, isSelected, onSelect, onRunAgent, isPausedHere, onUserSubmit }: Props) {
+export default function Step({ card, step, index, isSelected, onSelect, onRunAgent, isPausedHere, onUserSubmit, isOwner }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [isUserStepActive, setIsUserStepActive] = useState(false);
   const toggleAssignment = useCanvasStore((s) => s.toggleStepAssignment);
@@ -90,34 +91,52 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
         } ${(step.result !== null || step.isRunning) ? 'cursor-pointer' : ''}`}
       >
         <div className="flex items-center gap-2 px-3 py-2.5">
-          {/* Run button */}
-          <button
-            onClick={handleRun}
-            disabled={step.isRunning}
-            className={`group/btn w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
+          {/* Run button / status indicator */}
+          {isOwner ? (
+            <button
+              onClick={handleRun}
+              disabled={step.isRunning}
+              className={`group/btn w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 transition-all ${
+                step.isRunning
+                  ? 'bg-blue-100 text-blue-500'
+                  : step.result !== null
+                    ? 'bg-emerald-100 text-emerald-500 hover:bg-stone-100 hover:text-stone-500'
+                    : 'bg-stone-100 text-stone-400 hover:bg-stone-200 hover:text-stone-600'
+              } disabled:opacity-40`}
+              title={step.result !== null && !step.isRunning ? 'Re-run step' : step.assignment === 'agent' ? 'Run step' : 'User step'}
+            >
+              {step.isRunning ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : step.result !== null ? (
+                <>
+                  <Check size={13} strokeWidth={2.5} className="group-hover/btn:hidden" />
+                  <Play size={12} fill="currentColor" className="hidden group-hover/btn:block" />
+                </>
+              ) : (
+                <Play size={12} fill="currentColor" />
+              )}
+            </button>
+          ) : (
+            <span className={`w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0 ${
               step.isRunning
                 ? 'bg-blue-100 text-blue-500'
                 : step.result !== null
-                  ? 'bg-emerald-100 text-emerald-500 hover:bg-stone-100 hover:text-stone-500'
-                  : 'bg-stone-100 text-stone-400 hover:bg-stone-200 hover:text-stone-600'
-            } disabled:opacity-40`}
-            title={step.result !== null && !step.isRunning ? 'Re-run step' : step.assignment === 'agent' ? 'Run step' : 'User step'}
-          >
-            {step.isRunning ? (
-              <Loader2 size={13} className="animate-spin" />
-            ) : step.result !== null ? (
-              <>
-                <Check size={13} strokeWidth={2.5} className="group-hover/btn:hidden" />
-                <Play size={12} fill="currentColor" className="hidden group-hover/btn:block" />
-              </>
-            ) : (
-              <Play size={12} fill="currentColor" />
-            )}
-          </button>
+                  ? 'bg-emerald-100 text-emerald-500'
+                  : 'bg-stone-100 text-stone-400'
+            }`}>
+              {step.isRunning ? (
+                <Loader2 size={13} className="animate-spin" />
+              ) : step.result !== null ? (
+                <Check size={13} strokeWidth={2.5} />
+              ) : (
+                <span className="text-[10px] font-medium">{index + 1}</span>
+              )}
+            </span>
+          )}
 
           {/* Step description */}
           <div className="flex-1 min-w-0" onClick={(e) => e.stopPropagation()}>
-            {isEditing ? (
+            {isEditing && isOwner ? (
               <StepEditor
                 description={step.description}
                 onSave={handleDescriptionChange}
@@ -125,12 +144,12 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
               />
             ) : (
               <div
-                className="text-sm text-stone-700 cursor-text leading-snug"
-                onClick={() => setIsEditing(true)}
-                title="Click to edit"
+                className={`text-sm text-stone-700 leading-snug ${isOwner ? 'cursor-text' : ''}`}
+                onClick={isOwner ? () => setIsEditing(true) : undefined}
+                title={isOwner ? 'Click to edit' : undefined}
               >
                 <span className="text-stone-400 mr-1.5 text-xs font-medium">{index + 1}.</span>
-                {step.description || <span className="italic text-stone-400">Click to add description</span>}
+                {step.description || <span className="italic text-stone-400">{isOwner ? 'Click to add description' : 'No description'}</span>}
               </div>
             )}
           </div>
@@ -143,27 +162,40 @@ export default function Step({ card, step, index, isSelected, onSelect, onRunAge
             </span>
           )}
 
-          {/* Assignment toggle */}
-          <button
-            onClick={(e) => { e.stopPropagation(); toggleAssignment(card.id, step.id); }}
-            className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md font-medium flex-shrink-0 transition-colors ${
+          {/* Assignment toggle / badge */}
+          {isOwner ? (
+            <button
+              onClick={(e) => { e.stopPropagation(); toggleAssignment(card.id, step.id); }}
+              className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md font-medium flex-shrink-0 transition-colors ${
+                step.assignment === 'agent'
+                  ? 'bg-violet-50 text-violet-600 hover:bg-violet-100'
+                  : 'bg-sky-50 text-sky-600 hover:bg-sky-100'
+              }`}
+            >
+              {step.assignment === 'agent' ? <Bot size={11} /> : <User size={11} />}
+              {step.assignment === 'agent' ? 'Agent' : 'User'}
+            </button>
+          ) : (
+            <span className={`inline-flex items-center gap-1 px-2 py-1 text-[11px] rounded-md font-medium flex-shrink-0 ${
               step.assignment === 'agent'
-                ? 'bg-violet-50 text-violet-600 hover:bg-violet-100'
-                : 'bg-sky-50 text-sky-600 hover:bg-sky-100'
-            }`}
-          >
-            {step.assignment === 'agent' ? <Bot size={11} /> : <User size={11} />}
-            {step.assignment === 'agent' ? 'Agent' : 'User'}
-          </button>
+                ? 'bg-violet-50 text-violet-600'
+                : 'bg-sky-50 text-sky-600'
+            }`}>
+              {step.assignment === 'agent' ? <Bot size={11} /> : <User size={11} />}
+              {step.assignment === 'agent' ? 'Agent' : 'User'}
+            </span>
+          )}
 
           {/* Delete step */}
-          <button
-            onClick={(e) => { e.stopPropagation(); removeStep(card.id, step.id); }}
-            className="text-stone-300 hover:text-red-400 flex-shrink-0 transition-colors"
-            title="Remove step"
-          >
-            <X size={14} />
-          </button>
+          {isOwner && (
+            <button
+              onClick={(e) => { e.stopPropagation(); removeStep(card.id, step.id); }}
+              className="text-stone-300 hover:text-red-400 flex-shrink-0 transition-colors"
+              title="Remove step"
+            >
+              <X size={14} />
+            </button>
+          )}
 
           {/* Expand indicator */}
           {step.result !== null && (

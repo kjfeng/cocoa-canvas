@@ -10,9 +10,10 @@ interface Props {
   card: Card;
   selectedStepId: string | null;
   onSelectStep: (id: string | null) => void;
+  isOwner: boolean;
 }
 
-export default function Notebook({ card, selectedStepId, onSelectStep }: Props) {
+export default function Notebook({ card, selectedStepId, onSelectStep, isOwner }: Props) {
   const { runAgentStep, runSynthesis, runAll, stopAll } = useNotebook(card);
   const runAllAbortCardId = useCanvasStore((s) => s.runAllAbortCardId);
   const addStep = useCanvasStore((s) => s.addStep);
@@ -115,32 +116,34 @@ export default function Notebook({ card, selectedStepId, onSelectStep }: Props) 
   return (
     <div className="p-5">
       {/* Controls */}
-      <div className="flex items-center gap-2.5 mb-4">
-        {isRunningAll ? (
-          <button
-            onClick={stopAll}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors active:scale-95"
-          >
-            <Square size={13} fill="currentColor" />
-            Stop
-          </button>
-        ) : (
-          <button
-            onClick={handleRunAll}
-            disabled={anyStepRunning}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-stone-800 hover:bg-stone-900 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
-          >
-            <Play size={13} fill="currentColor" />
-            Run All
-          </button>
-        )}
-        {pausedAtIndex !== null && (
-          <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
-            <Pause size={11} />
-            Waiting for input on step {pausedAtIndex + 1}
-          </span>
-        )}
-      </div>
+      {isOwner && (
+        <div className="flex items-center gap-2.5 mb-4">
+          {isRunningAll ? (
+            <button
+              onClick={stopAll}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors active:scale-95"
+            >
+              <Square size={13} fill="currentColor" />
+              Stop
+            </button>
+          ) : (
+            <button
+              onClick={handleRunAll}
+              disabled={anyStepRunning}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-sm bg-stone-800 hover:bg-stone-900 text-white rounded-lg transition-all disabled:opacity-40 active:scale-95"
+            >
+              <Play size={13} fill="currentColor" />
+              Run All
+            </button>
+          )}
+          {pausedAtIndex !== null && (
+            <span className="inline-flex items-center gap-1.5 text-xs text-amber-600 bg-amber-50 border border-amber-200/60 px-2.5 py-1 rounded-lg">
+              <Pause size={11} />
+              Waiting for input on step {pausedAtIndex + 1}
+            </span>
+          )}
+        </div>
+      )}
 
       {/* Steps */}
       <div className="space-y-1.5">
@@ -159,18 +162,21 @@ export default function Notebook({ card, selectedStepId, onSelectStep }: Props) 
                 handleResumeAfterUser(index);
               }
             }}
+            isOwner={isOwner}
           />
         ))}
       </div>
 
       {/* Add step */}
-      <button
-        onClick={() => addStep(card.id, card.steps.length - 1)}
-        className="mt-2 w-full py-1.5 text-xs text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg border border-dashed border-stone-200 transition-colors flex items-center justify-center gap-1.5"
-      >
-        <Plus size={13} />
-        Add step
-      </button>
+      {isOwner && (
+        <button
+          onClick={() => addStep(card.id, card.steps.length - 1)}
+          className="mt-2 w-full py-1.5 text-xs text-stone-400 hover:text-stone-600 hover:bg-stone-50 rounded-lg border border-dashed border-stone-200 transition-colors flex items-center justify-center gap-1.5"
+        >
+          <Plus size={13} />
+          Add step
+        </button>
+      )}
 
       {/* Final Results entry */}
       {(allStepsComplete || card.finalResult !== null) && (

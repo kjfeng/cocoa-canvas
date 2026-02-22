@@ -3,7 +3,7 @@
   "private": true,
   "workspaces": ["client", "server"],
   "scripts": {
-    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\"",
+    "dev": "concurrently \"npm run dev -w server\" \"npm run dev -w client\" \"npm run signaling -w client\"",
     "dev:client": "npm run dev -w client",
     "dev:server": "npm run dev -w server"
   },

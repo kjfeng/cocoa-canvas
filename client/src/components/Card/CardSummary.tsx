@@ -3,6 +3,7 @@ import { useCanvasStore } from '../../store/canvasStore';
 import type { Card } from '../../types';
 import { Expand, GitFork, Trash2, Check, Loader2, Link, Sparkles } from 'lucide-react';
 import ForkDialog from './ForkDialog';
+import { isCardOwner } from '../../utils/ownership';
 
 interface Props {
   card: Card;
@@ -13,6 +14,7 @@ export default function CardSummary({ card }: Props) {
   const removeCard = useCanvasStore((s) => s.removeCard);
   const cards = useCanvasStore((s) => s.cards);
   const [showForkDialog, setShowForkDialog] = useState(false);
+  const isOwner = isCardOwner(card);
 
   const completedSteps = card.steps.filter((s) => s.result !== null).length;
   const totalSteps = card.steps.length;
@@ -25,17 +27,31 @@ export default function CardSummary({ card }: Props) {
           <h3 className="font-medium text-stone-800 text-sm leading-snug line-clamp-2 flex-1">
             {card.title}
           </h3>
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              removeCard(card.id);
-            }}
-            className="text-stone-300 hover:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
-            title="Delete card"
-          >
-            <Trash2 size={13} />
-          </button>
+          {isOwner && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                removeCard(card.id);
+              }}
+              className="text-stone-300 hover:text-red-400 flex-shrink-0 opacity-0 group-hover:opacity-100 transition-all"
+              title="Delete card"
+            >
+              <Trash2 size={13} />
+            </button>
+          )}
         </div>
+
+        {card.createdByName && (
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <span
+              className="w-4 h-4 rounded-full flex items-center justify-center text-[8px] font-medium text-white flex-shrink-0"
+              style={{ backgroundColor: card.createdByColor || '#94a3b8' }}
+            >
+              {card.createdByName.charAt(0).toUpperCase()}
+            </span>
+            <span className="text-[11px] text-stone-400 truncate">{card.createdByName}</span>
+          </div>
+        )}
 
         {card.forkedFromId && cards[card.forkedFromId] && (
           <div className="flex items-center gap-1 text-[11px] text-stone-400 mb-2">

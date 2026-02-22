@@ -4,6 +4,7 @@ import type { Card } from '../../types';
 import CardHeader from './CardHeader';
 import Notebook from '../Notebook/Notebook';
 import SidebarPanel from '../Notebook/SidebarPanel';
+import { isCardOwner } from '../../utils/ownership';
 
 interface Props {
   card: Card;
@@ -83,6 +84,7 @@ export default function CardDetail({ card }: Props) {
             card={card}
             selectedStepId={selectedId}
             onSelectStep={setSelectedId}
+            isOwner={isCardOwner(card)}
           />
         </div>
 
@@ -95,6 +97,7 @@ export default function CardDetail({ card }: Props) {
               selectedIndex={selectedIndex}
               showFinal={showFinal}
               onClose={() => setSelectedId(null)}
+              isOwner={isCardOwner(card)}
             />
           </div>
         )}
