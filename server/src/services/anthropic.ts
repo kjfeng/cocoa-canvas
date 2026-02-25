@@ -1,12 +1,14 @@
-import Anthropic from '@anthropic-ai/sdk';
+import AnthropicBedrock from '@anthropic-ai/bedrock-sdk';
 
-const MODEL = 'claude-sonnet-4-6';
-const FAST_MODEL = 'claude-haiku-4-5-20251001';
+const MODEL = 'us.anthropic.claude-sonnet-4-6';
+const FAST_MODEL = 'us.anthropic.claude-haiku-4-5-20251001-v1:0';
 
-let _client: Anthropic | null = null;
-function getClient(): Anthropic {
+let _client: AnthropicBedrock | null = null;
+function getClient(): AnthropicBedrock {
   if (!_client) {
-    _client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    _client = new AnthropicBedrock({
+      awsRegion: process.env.AWS_REGION ?? 'us-west-2',
+    });
   }
   return _client;
 }

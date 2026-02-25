@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { Request, Response } from 'express';
-import { generateJSON, streamText } from '../services/anthropic.js';
+import { generateJSON, streamText } from '../services/api.js';
 import { buildPlanPrompt } from '../prompts/planPrompt.js';
 import { buildStepPrompt } from '../prompts/stepPrompt.js';
 import { buildHelpPrompt } from '../prompts/helpPrompt.js';
