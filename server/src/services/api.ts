@@ -1,4 +1,4 @@
-const provider = process.env.LLM_PROVIDER ?? 'anthropic';
+const provider = process.env.LLM_PROVIDER ?? 'openai';
 
 let _mod: typeof import('./anthropic.js');
 

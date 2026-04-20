@@ -200,9 +200,23 @@ export default function UserStepInput({ card, step, index, onSubmit }: Props) {
       )}
 
       {isFormLoading && !formCode && (
-        <div className="mb-2 flex items-center gap-1.5 text-xs text-stone-400">
-          <Loader2 size={12} className="animate-spin" />
-          Generating smart form... feel free to jot down freeform notes in the meantime!
+        <div className="mb-3 space-y-3 animate-pulse">
+          <div className="space-y-1.5">
+            <div className="h-3 w-24 bg-stone-200 rounded" />
+            <div className="h-9 w-full bg-stone-100 rounded-lg border border-stone-200" />
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 w-32 bg-stone-200 rounded" />
+            <div className="h-9 w-full bg-stone-100 rounded-lg border border-stone-200" />
+          </div>
+          <div className="space-y-1.5">
+            <div className="h-3 w-20 bg-stone-200 rounded" />
+            <div className="h-20 w-full bg-stone-100 rounded-lg border border-stone-200" />
+          </div>
+          <div className="flex justify-end">
+            <div className="h-8 w-20 bg-sky-200 rounded-lg" />
+          </div>
+          <p className="text-xs text-stone-400">Generating smart form... feel free to jot down freeform notes below!</p>
         </div>
       )}
 

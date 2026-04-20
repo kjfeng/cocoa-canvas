@@ -31,6 +31,12 @@ export default function DynamicFormRenderer({ code, onSubmit, onError }: Props) 
   const previewRef = useRef<HTMLDivElement>(null);
   const errorNotified = useRef(false);
 
+  const onSubmitRef = useRef(onSubmit);
+  onSubmitRef.current = onSubmit;
+  const stableOnSubmit = useCallback((markdown: string) => {
+    onSubmitRef.current(markdown);
+  }, []);
+
   // Detect empty render (LLM forgot render() call) via timeout
   useEffect(() => {
     const timer = setTimeout(() => {
@@ -42,7 +48,7 @@ export default function DynamicFormRenderer({ code, onSubmit, onError }: Props) 
     return () => clearTimeout(timer);
   }, [onError]);
 
-  const liveScope = useMemo(() => ({ ...scope, onSubmit }), [onSubmit]);
+  const liveScope = useMemo(() => ({ ...scope, onSubmit: stableOnSubmit }), [stableOnSubmit]);
 
   return (
     <LiveProvider code={code} scope={liveScope} noInline>
