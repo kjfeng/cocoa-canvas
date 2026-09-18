@@ -5,7 +5,7 @@ A collaborative canvas where users and AI work together through interactive agen
 ## Prerequisites
 
 - Node.js 18+
-- An [Anthropic API key](https://console.anthropic.com/)
+- An Anthropic or OpenAI API key. Note that Anthropic models are called through Amazon Bedrock (feel free to fork and change this).
 
 ## Setup
 
@@ -20,6 +20,7 @@ Create a `.env` file:
 
 ```
 ANTHROPIC_API_KEY=sk-ant-...
+OPENAI_API_KEY=sk-...
 ```
 
 Start the dev server:
